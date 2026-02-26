@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: eh-ibex-adapter
+  main:
+    banner-mode: log
+  config:
+    import: optional:file:organ.yml
+server:
+  port: 8094
+#
+gcp-config:          # Path to GCP credentials file
+  dicom-web-url: "https://healthcare.googleapis.com/v1/"
+db:
+  service:
+    url: http://10.201.8.58:8081/api:/
+kafka:
+  bootstrap-servers: 10.201.8.56:9094
+  producer:
+    acks: all
+    retries: 3
+    batch-size: 16384
+    linger-ms: 1
+    buffer-memory: 33554432
+    enable-idempotence: true
+    compression-type: lz4
+  topic:
+    email: email-svc-topic
+    scan-progress: scan-progress-topic
+
+service:
+  account:
+    name:  "ibex-service-account@prj-d-path-integration-cs1h.iam.gserviceaccount.com"
+project:
+  name: "prj-d-path-integration-cs1h"
+  secret: "prj-d-path-integration-cs1h"
+signed:
+  url:
+    key: "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"
+    expiration: 30 # in minutes
+ibex:
+  api:
+    url: "https://ibx-citius-fr-02.dev.ibex-ai.com/api/v1"
+    key: "3fc8fd01f3afb97ccdaa5c677bcdb9bc201f423b611fcbcde550b4d47e304ba8"
+  callback-url: "https://eh-ibex-svc.nsdev.tech"
+
+
+network:
+  enabled: false

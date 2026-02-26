@@ -1,0 +1,13 @@
+organ:
+  mapping:
+    prostate: prostate
+    breast: breast
+    stomach: gastric
+    esophagus: gastric
+    duodenum: gastric
+    jejunum: gastric
+
+  allowed:
+    - prostate
+    - breast
+    - gastric
