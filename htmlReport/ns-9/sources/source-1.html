@@ -1,0 +1,428 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > AppUtil</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.eh.digitalpathology.ibex.util</a>
+</div>
+
+<h1>Coverage Summary for Class: AppUtil (com.eh.digitalpathology.ibex.util)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">AppUtil</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (19/19)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    84%
+  </span>
+  <span class="absValue">
+    (79/94)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (104/104)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">AppUtil$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">AppUtil$2</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (21/21)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    84%
+  </span>
+  <span class="absValue">
+    (79/94)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (106/106)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.eh.digitalpathology.ibex.util;
+&nbsp;
+&nbsp;import com.eh.digitalpathology.ibex.constants.AppConstants;
+&nbsp;import com.fasterxml.jackson.core.JsonProcessingException;
+&nbsp;import com.fasterxml.jackson.core.type.TypeReference;
+&nbsp;import com.fasterxml.jackson.databind.JsonNode;
+&nbsp;import com.fasterxml.jackson.databind.ObjectMapper;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;
+&nbsp;import java.util.*;
+&nbsp;import java.util.regex.Matcher;
+&nbsp;import java.util.regex.Pattern;
+&nbsp;
+&nbsp;public class AppUtil {
+&nbsp;
+&nbsp;    private AppUtil() {
+&nbsp;    }
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger log = LoggerFactory.getLogger(AppUtil.class.getName());</b>
+&nbsp;
+&nbsp;    public static String getTagValue(Map&lt;String, Object&gt; metadata, String tag) {
+<b class="fc">&nbsp;        return findValueByTag(metadata, tag).orElse(null);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static Optional&lt;String&gt; findValueByTag(Object data, String tag) {
+<b class="fc">&nbsp;        if (data instanceof Map&lt;?, ?&gt; map) {</b>
+<b class="fc">&nbsp;            Optional&lt;String&gt; directMatch = extractTagValue((Map&lt;String, Object&gt;) map, tag);</b>
+<b class="fc">&nbsp;            if (directMatch.isPresent()) return directMatch;</b>
+&nbsp;
+<b class="fc">&nbsp;            return searchNestedValues(map.values(), tag);</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        if (data instanceof List&lt;?&gt; list) {</b>
+<b class="fc">&nbsp;            return searchNestedValues(list, tag);</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        return Optional.empty();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static Optional&lt;String&gt; extractTagValue(Map&lt;String, Object&gt; map, String tag) {
+<b class="fc">&nbsp;        String value = extractValue(map, tag);</b>
+<b class="fc">&nbsp;        return Optional.ofNullable(value);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static String extractValue(Map&lt;String, Object&gt; map, String key) {
+<b class="fc">&nbsp;        if (!map.containsKey(key)) return null;</b>
+&nbsp;
+<b class="fc">&nbsp;        Object valueObj = map.get(key);</b>
+<b class="fc">&nbsp;        if (!(valueObj instanceof Map&lt;?, ?&gt; valueMap)) return null;</b>
+&nbsp;
+<b class="fc">&nbsp;        Object listObj = valueMap.get(AppConstants.VALUE);</b>
+<b class="pc">&nbsp;        if (!(listObj instanceof List&lt;?&gt; list) || list.isEmpty()) return null;</b>
+&nbsp;
+<b class="fc">&nbsp;        return list.get(0).toString();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    private static Optional&lt;String&gt; searchNestedValues(Collection&lt;?&gt; values, String tag) {
+<b class="fc">&nbsp;        for (Object value : values) {</b>
+<b class="fc">&nbsp;            Optional&lt;String&gt; result = findValueByTag(value, tag);</b>
+<b class="fc">&nbsp;            if (result.isPresent()) return result;</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return Optional.empty();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public static Optional&lt;String&gt; getStainValue(Map&lt;String, Object&gt; metadataMap) {
+<b class="fc">&nbsp;        return findStainRecursive(metadataMap);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static Optional&lt;String&gt; findStainRecursive(Map&lt;String, Object&gt; map) {
+<b class="fc">&nbsp;        for (Map.Entry&lt;String, Object&gt; entry : map.entrySet()) {</b>
+<b class="fc">&nbsp;            String key = entry.getKey();</b>
+<b class="fc">&nbsp;            Object value = entry.getValue();</b>
+&nbsp;
+<b class="fc">&nbsp;            Optional&lt;String&gt; stain = checkForStain(map, key, value);</b>
+<b class="fc">&nbsp;            if (stain.isPresent()) return stain;</b>
+&nbsp;
+<b class="fc">&nbsp;            Optional&lt;String&gt; nestedResult = findStainRecursiveInNested(value);</b>
+<b class="fc">&nbsp;            if (nestedResult.isPresent()) return nestedResult;</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return Optional.empty();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static Optional&lt;String&gt; checkForStain(Map&lt;String, Object&gt; map, String key, Object value) {
+<b class="fc">&nbsp;        if (!&quot;0040A043&quot;.equals(key) || !(value instanceof Map)) return Optional.empty();</b>
+&nbsp;
+<b class="fc">&nbsp;        Map&lt;String, Object&gt; tag043 = (Map&lt;String, Object&gt;) value;</b>
+<b class="fc">&nbsp;        Object valueListObj = tag043.get(AppConstants.VALUE);</b>
+&nbsp;
+<b class="pc">&nbsp;        if (!(valueListObj instanceof List&lt;?&gt; valueList)) return Optional.empty();</b>
+&nbsp;
+<b class="fc">&nbsp;        for (Object item : valueList) {</b>
+<b class="fc">&nbsp;            Optional&lt;String&gt; stain = extractStainIfUsingSubstance(map, item);</b>
+<b class="fc">&nbsp;            if (stain.isPresent()) return stain;</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        return Optional.empty();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static Optional&lt;String&gt; extractStainIfUsingSubstance(Map&lt;String, Object&gt; map, Object item) {
+<b class="pc">&nbsp;        if (!(item instanceof Map&lt;?, ?&gt; itemMap)) return Optional.empty();</b>
+&nbsp;
+<b class="fc">&nbsp;        Object conceptObj = itemMap.get(&quot;00080104&quot;);</b>
+<b class="pc">&nbsp;        if (!(conceptObj instanceof Map&lt;?, ?&gt; conceptCodeName)) return Optional.empty();</b>
+&nbsp;
+<b class="fc">&nbsp;        Object meaningObj = conceptCodeName.get(AppConstants.VALUE);</b>
+<b class="pc">&nbsp;        if (!(meaningObj instanceof List&lt;?&gt; meaningList) || meaningList.isEmpty()) return Optional.empty();</b>
+&nbsp;
+<b class="fc">&nbsp;        if (!&quot;Using substance&quot;.equalsIgnoreCase(meaningList.get(0).toString())) return Optional.empty();</b>
+&nbsp;
+<b class="fc">&nbsp;        return extractStain(map);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static Optional&lt;String&gt; findStainRecursiveInNested(Object value) {
+<b class="fc">&nbsp;        if (value instanceof Map&lt;?, ?&gt; nestedMap) {</b>
+<b class="fc">&nbsp;            return findStainRecursive((Map&lt;String, Object&gt;) nestedMap);</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        if (value instanceof List&lt;?&gt; list) {</b>
+<b class="fc">&nbsp;            for (Object item : list) {</b>
+<b class="fc">&nbsp;                if (item instanceof Map&lt;?, ?&gt; itemMap) {</b>
+<b class="fc">&nbsp;                    Optional&lt;String&gt; result = findStainRecursive((Map&lt;String, Object&gt;) itemMap);</b>
+<b class="pc">&nbsp;                    if (result.isPresent()) return result;</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        return Optional.empty();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static Optional&lt;String&gt; extractStain(Map&lt;String, Object&gt; map) {
+<b class="fc">&nbsp;        return Optional.ofNullable(extractValue(map, &quot;0040A160&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public static Map&lt;String, Object&gt; convertStringToJson(String data) {
+<b class="fc">&nbsp;        ObjectMapper mapper = new ObjectMapper();</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            JsonNode node = mapper.readTree(data);</b>
+<b class="fc">&nbsp;            if (node.isArray() &amp;&amp; !node.isEmpty()) {</b>
+<b class="fc">&nbsp;                return mapper.convertValue(node.get(0), new TypeReference&lt;&gt;() {</b>
+&nbsp;                });
+<b class="fc">&nbsp;            } else if (node.isObject()) {</b>
+<b class="fc">&nbsp;                return mapper.convertValue(node, new TypeReference&lt;&gt;() {</b>
+&nbsp;                });
+&nbsp;            } else {
+<b class="fc">&nbsp;                log.error(&quot;Unexpected json structure.&quot;);</b>
+<b class="fc">&nbsp;                return Map.of();</b>
+&nbsp;            }
+&nbsp;        } catch (JsonProcessingException ex) {
+<b class="fc">&nbsp;            log.error(&quot;convertStringToJson :: error while parsing the data:: {}&quot;, ex.getMessage());</b>
+<b class="fc">&nbsp;            return Map.of();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    public static Map&lt;String, String&gt; extractOrganType(
+&nbsp;            Map&lt;String, Object&gt; metadataMap,
+&nbsp;            String specimenDescriptionSeq,
+&nbsp;            String primaryAnatomicStructureSeq,
+&nbsp;            String codeValueKey,
+&nbsp;            String codeMeaningKey) {
+&nbsp;
+<b class="fc">&nbsp;        Map&lt;String, String&gt; organMap = new HashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        traverseForOrgan(metadataMap, specimenDescriptionSeq, primaryAnatomicStructureSeq, codeValueKey, codeMeaningKey, organMap);</b>
+<b class="fc">&nbsp;        return organMap;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static void traverseForOrgan(
+&nbsp;            Object data,
+&nbsp;            String specimenDescriptionSeq,
+&nbsp;            String primaryAnatomicStructureSeq,
+&nbsp;            String codeValueKey,
+&nbsp;            String codeMeaningKey,
+&nbsp;            Map&lt;String, String&gt; organMap) {
+&nbsp;
+<b class="fc">&nbsp;        if (data instanceof Map&lt;?, ?&gt; map) {</b>
+<b class="fc">&nbsp;            for (Map.Entry&lt;?, ?&gt; entry : map.entrySet()) {</b>
+<b class="fc">&nbsp;                String key = entry.getKey().toString();</b>
+<b class="fc">&nbsp;                Object value = entry.getValue();</b>
+&nbsp;
+<b class="fc">&nbsp;                if (specimenDescriptionSeq.equals(key)) {</b>
+<b class="fc">&nbsp;                    processSpecimenEntry(value, primaryAnatomicStructureSeq, codeValueKey, codeMeaningKey, organMap);</b>
+&nbsp;                }
+&nbsp;
+<b class="fc">&nbsp;                traverseForOrgan(value, specimenDescriptionSeq, primaryAnatomicStructureSeq, codeValueKey, codeMeaningKey, organMap);</b>
+&nbsp;            }
+<b class="fc">&nbsp;        } else if (data instanceof List&lt;?&gt; list) {</b>
+<b class="fc">&nbsp;            for (Object item : list) {</b>
+<b class="fc">&nbsp;                traverseForOrgan(item, specimenDescriptionSeq, primaryAnatomicStructureSeq, codeValueKey, codeMeaningKey, organMap);</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private static void processSpecimenEntry(
+&nbsp;            Object value,
+&nbsp;            String primaryAnatomicStructureSeq,
+&nbsp;            String codeValueKey,
+&nbsp;            String codeMeaningKey,
+&nbsp;            Map&lt;String, String&gt; organMap) {
+&nbsp;
+<b class="pc">&nbsp;        if (!(value instanceof Map&lt;?, ?&gt; specimenMap)) return;</b>
+&nbsp;
+<b class="fc">&nbsp;        Object listObj = specimenMap.get(AppConstants.VALUE);</b>
+<b class="pc">&nbsp;        if (!(listObj instanceof List&lt;?&gt; specimenList)) return;</b>
+&nbsp;
+<b class="fc">&nbsp;        for (Object specimenItem : specimenList) {</b>
+<b class="pc">&nbsp;            if (specimenItem instanceof Map&lt;?, ?&gt; specimenItemMap) {</b>
+<b class="fc">&nbsp;                extractOrganFromSpecimen((Map&lt;String, Object&gt;) specimenItemMap, primaryAnatomicStructureSeq, codeValueKey, codeMeaningKey, organMap);</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private static void extractOrganFromSpecimen(
+&nbsp;            Map&lt;String, Object&gt; specimenItemMap,
+&nbsp;            String primaryAnatomicStructureSeq,
+&nbsp;            String codeValueKey,
+&nbsp;            String codeMeaningKey,
+&nbsp;            Map&lt;String, String&gt; organMap) {
+&nbsp;
+<b class="fc">&nbsp;        if (!specimenItemMap.containsKey(primaryAnatomicStructureSeq)) return;</b>
+&nbsp;
+<b class="fc">&nbsp;        Object structureObj = specimenItemMap.get(primaryAnatomicStructureSeq);</b>
+<b class="pc">&nbsp;        if (!(structureObj instanceof Map&lt;?, ?&gt; structureMap)) return;</b>
+&nbsp;
+<b class="fc">&nbsp;        Object structureListObj = structureMap.get(AppConstants.VALUE);</b>
+<b class="pc">&nbsp;        if (!(structureListObj instanceof List&lt;?&gt; structureList)) return;</b>
+&nbsp;
+<b class="fc">&nbsp;        for (Object structureItem : structureList) {</b>
+<b class="pc">&nbsp;            if (structureItem instanceof Map&lt;?, ?&gt; structureItemMap) {</b>
+<b class="fc">&nbsp;                String codeValue = extractValue((Map&lt;String, Object&gt;) structureItemMap, codeValueKey);</b>
+<b class="fc">&nbsp;                String codeMeaning = extractValue((Map&lt;String, Object&gt;) structureItemMap, codeMeaningKey);</b>
+&nbsp;
+<b class="pc">&nbsp;                if (codeValue != null &amp;&amp; codeMeaning != null) {</b>
+<b class="fc">&nbsp;                    organMap.put(codeValue, codeMeaning);</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    public static String convertObjectToString(Object object) {
+<b class="fc">&nbsp;        ObjectMapper mapper = new ObjectMapper();</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(object);</b>
+&nbsp;        } catch (JsonProcessingException ex) {
+<b class="fc">&nbsp;            log.error(&quot;convertObjectToJson :: error while parsing the data:: {}&quot;, ex.getMessage());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return null;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public static boolean validate(String id) {
+<b class="fc">&nbsp;        if (Objects.nonNull(id)) {</b>
+<b class="fc">&nbsp;            String regex = &quot;^[a-zA-Z0-9-_./]+$&quot;;</b>
+<b class="fc">&nbsp;            Pattern pattern = Pattern.compile(regex);</b>
+<b class="fc">&nbsp;            Matcher matcher = pattern.matcher(id);</b>
+<b class="fc">&nbsp;            return matcher.matches();</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return false;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-02-26 18:07</div>
+</div>
+</body>
+</html>

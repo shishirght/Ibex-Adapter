@@ -1,0 +1,321 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > IbexAdapterService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.eh.digitalpathology.ibex.service</a>
+</div>
+
+<h1>Coverage Summary for Class: IbexAdapterService (com.eh.digitalpathology.ibex.service)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">IbexAdapterService</td>
+<td class="coverageStat">
+  <span class="percent">
+    87.5%
+  </span>
+  <span class="absValue">
+    (7/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (6/12)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    71.7%
+  </span>
+  <span class="absValue">
+    (38/53)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">IbexAdapterService$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    88.9%
+  </span>
+  <span class="absValue">
+    (8/9)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (6/12)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    72.2%
+  </span>
+  <span class="absValue">
+    (39/54)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;/**
+&nbsp; * IbexAdapterService is responsible for your actual business logic. This service will act on the processed notifications and perform the necessary steps to create a case and a slide. It will also be responsible for interacting with the low-level API wrappers created for the Ibex and Healthcare APIs.
+&nbsp; * Author: Preeti Ankam
+&nbsp; * Date:December 01, 2024
+&nbsp; */
+&nbsp;
+&nbsp;package com.eh.digitalpathology.ibex.service;
+&nbsp;
+&nbsp;import com.eh.digitalpathology.ibex.client.HealthcareApiClient;
+&nbsp;import com.eh.digitalpathology.ibex.client.IbexApiClient;
+&nbsp;import com.eh.digitalpathology.ibex.config.GcpConfig;
+&nbsp;import com.eh.digitalpathology.ibex.config.IbexConfig;
+&nbsp;import com.eh.digitalpathology.ibex.constants.AppConstants;
+&nbsp;import com.eh.digitalpathology.ibex.exceptions.HealthcareApiException;
+&nbsp;import com.eh.digitalpathology.ibex.exceptions.IbexApiException;
+&nbsp;import com.eh.digitalpathology.ibex.util.AppUtil;
+&nbsp;import com.eh.digitalpathology.ibex.util.HttpClientUtil;
+&nbsp;import com.fasterxml.jackson.core.type.TypeReference;
+&nbsp;import com.fasterxml.jackson.databind.JsonNode;
+&nbsp;import com.fasterxml.jackson.databind.ObjectMapper;
+&nbsp;import com.google.auth.oauth2.ServiceAccountCredentials;
+&nbsp;import com.google.cloud.storage.BlobId;
+&nbsp;import com.google.cloud.storage.Storage;
+&nbsp;import com.google.cloud.storage.StorageOptions;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.springframework.scheduling.annotation.Async;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.io.ByteArrayInputStream;
+&nbsp;import java.io.IOException;
+&nbsp;import java.net.URI;
+&nbsp;import java.nio.charset.StandardCharsets;
+&nbsp;import java.nio.file.Files;
+&nbsp;import java.nio.file.Path;
+&nbsp;import java.nio.file.Paths;
+&nbsp;import java.util.Map;
+&nbsp;import java.util.Objects;
+&nbsp;
+&nbsp;@Service
+&nbsp;public class IbexAdapterService {
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger logger = LoggerFactory.getLogger(IbexAdapterService.class);</b>
+&nbsp;
+&nbsp;    private final HealthcareApiClient healthcareApiClient;
+&nbsp;    private final SlideService slideService;
+&nbsp;    private final GcpConfig gcpConfig;
+&nbsp;    private final IbexConfig ibexConfig;
+&nbsp;
+&nbsp;    private final IbexApiClient ibexApiClient;
+&nbsp;    private final BarcodeStudyInfo barcodeStudyInfo;
+&nbsp;    private final BucketContext bucketContext;
+&nbsp;
+<b class="fc">&nbsp;    public IbexAdapterService(HealthcareApiClient healthcareApiClient, SlideService slideService, GcpConfig gcpConfig, IbexConfig ibexConfig, IbexApiClient ibexApiClient, BarcodeStudyInfo barcodeStudyInfo, BucketContext bucketContext) {</b>
+<b class="fc">&nbsp;        this.healthcareApiClient = healthcareApiClient;</b>
+<b class="fc">&nbsp;        this.slideService = slideService;</b>
+<b class="fc">&nbsp;        this.gcpConfig = gcpConfig;</b>
+<b class="fc">&nbsp;        this.ibexConfig = ibexConfig;</b>
+<b class="fc">&nbsp;        this.ibexApiClient = ibexApiClient;</b>
+<b class="fc">&nbsp;        this.barcodeStudyInfo = barcodeStudyInfo;</b>
+<b class="fc">&nbsp;        this.bucketContext = bucketContext;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Creates both a case and a slide in the IBEX system using the metadata fetched from the Healthcare API.
+&nbsp;     *
+&nbsp;     * @param studyUid  The unique study identifier used to fetch metadata.
+&nbsp;     * @param sourceUrl The source URL used to create the slide.
+&nbsp;     */
+&nbsp;    @Async
+&nbsp;    public void createCaseAndSlide(String studyUid, String sourceUrl, String barcode, String seriesId, String dicomWebUrl) {
+&nbsp;
+&nbsp;        try {
+&nbsp;            // Fetch metadata using Healthcare API
+<b class="fc">&nbsp;            String metadataJson = healthcareApiClient.fetchMetadata(studyUid, seriesId, dicomWebUrl);</b>
+<b class="fc">&nbsp;            Map&lt;String, Object&gt; metadataMap = AppUtil.convertStringToJson(metadataJson);</b>
+<b class="fc">&nbsp;            String seriesUid = AppUtil.getTagValue(metadataMap, AppConstants.SERIES_INSTANCE_UID);</b>
+&nbsp;
+<b class="fc">&nbsp;            logger.info(&quot;createCaseAndSlide :: Series Uid: {}&quot;, seriesUid);</b>
+<b class="pc">&nbsp;            if (Objects.nonNull(metadataJson)) {</b>
+<b class="fc">&nbsp;                logger.info(&quot;createCaseAndSlide :: Slide creation started for study uid: {} , series uid:{}..&quot;, studyUid, seriesUid);</b>
+&nbsp;                // Create the slide
+<b class="fc">&nbsp;                slideService.createSlide(metadataMap, studyUid, seriesUid, sourceUrl, barcode);</b>
+&nbsp;            }
+&nbsp;        } catch (HealthcareApiException e) {
+<b class="fc">&nbsp;            logger.error(&quot;createCaseAndSlide :: Error fetching metadata from Healthcare API: &quot;, e);</b>
+&nbsp;        } catch (IbexApiException e) {
+<b class="fc">&nbsp;            logger.error(&quot;createCaseAndSlide :: Error while creating case and slide: &quot;, e);</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            logger.error(&quot;createCaseAndSlide :: Exception occurred while creating case and slide: &quot;, e);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    public void retrieveFindings(String slideId) {
+&nbsp;        try {
+<b class="fc">&nbsp;            ibexApiClient.getFindingsOrHeatmaps(slideId, IbexApiClient.FINDINGS_ENDPOINT);</b>
+&nbsp;        } catch (IbexApiException e) {
+<b class="fc">&nbsp;            logger.error(&quot;retrieveFindings :: Exception occurred while getting findings for slide id {}: &quot;, slideId, e);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    public void retrieveHeatmaps(String slideId) {
+&nbsp;        try {
+<b class="fc">&nbsp;            String jsonRes = ibexApiClient.getFindingsOrHeatmaps(slideId, IbexApiClient.HEATMAPS_ENDPOINT);</b>
+<b class="fc">&nbsp;            Path tmpDir = Paths.get(System.getProperty(&quot;java.io.tmpdir&quot;), slideId);</b>
+<b class="fc">&nbsp;            Files.createDirectories(tmpDir);</b>
+<b class="fc">&nbsp;            downloadHeatmaps(jsonRes, tmpDir);</b>
+&nbsp;        } catch (IOException | IbexApiException ex) {
+<b class="fc">&nbsp;            logger.error(&quot;retrieveHeatmaps :: Error occurred while retrieving heat maps :: {}&quot;, ex.getMessage());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void downloadHeatmaps(String jsonRes, Path tmpDir) throws IbexApiException {
+<b class="fc">&nbsp;        ObjectMapper mapper = new ObjectMapper();</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            JsonNode rootNode = mapper.readTree(jsonRes);</b>
+&nbsp;
+<b class="fc">&nbsp;            if (rootNode.isArray()) {</b>
+<b class="fc">&nbsp;                for (JsonNode heatmapNode : rootNode) {</b>
+<b class="fc">&nbsp;                    Map&lt;String, Object&gt; heatmapMap = mapper.convertValue(heatmapNode, new TypeReference&lt;&gt;() {</b>
+&nbsp;                    });
+<b class="fc">&nbsp;                    String heatmapUrl = (String) heatmapMap.get(&quot;heatmap_url&quot;);</b>
+<b class="pc">&nbsp;                    if (heatmapUrl != null) {</b>
+<b class="nc">&nbsp;                        saveHeatmap(heatmapUrl, tmpDir);</b>
+&nbsp;                    }
+&nbsp;                }
+&nbsp;            } else {
+<b class="fc">&nbsp;                logger.warn(&quot;downloadHeatmaps :: Expected JSON array for heatmaps, but got: {}&quot;, rootNode.getNodeType());</b>
+&nbsp;            }
+&nbsp;        } catch (IOException e) {
+<b class="fc">&nbsp;            throw new IbexApiException(&quot;downloadHeatmaps :: Error parsing heatmaps JSON: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void saveHeatmap(String jsonRes, Path tmpDir) throws IbexApiException {
+<b class="nc">&nbsp;        Map&lt;String, String&gt; headers = Map.of(AppConstants.API_KEY_HEADER, ibexConfig.getApi().getKey());</b>
+&nbsp;        try {
+<b class="nc">&nbsp;            byte[] response = HttpClientUtil.getImageBytes(jsonRes, headers);</b>
+<b class="nc">&nbsp;            if (response != null) {</b>
+<b class="nc">&nbsp;                URI heatmapUri = URI.create(jsonRes);</b>
+<b class="nc">&nbsp;                String fileName = Paths.get(heatmapUri.getPath()).getFileName().toString();</b>
+<b class="nc">&nbsp;                Files.write(tmpDir.resolve(fileName), response);</b>
+<b class="nc">&nbsp;                logger.info(&quot;saveHeatmap :: Downloaded and saved heatmap: {}&quot;, fileName);</b>
+&nbsp;            }
+&nbsp;        } catch (HealthcareApiException | IOException e) {
+<b class="nc">&nbsp;            throw new IbexApiException(&quot;saveHeatmap :: Unable to retrieve image and write it into a file :: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    public void deleteFolderFromBucket(String barcode) {
+&nbsp;        try {
+<b class="fc">&nbsp;            String studyUid = barcodeStudyInfo.get(barcode);</b>
+<b class="fc">&nbsp;            Storage storage = StorageOptions.newBuilder().setCredentials(ServiceAccountCredentials.fromStream(new ByteArrayInputStream(gcpConfig.getCreds().getBytes(StandardCharsets.UTF_8)))).build().getService();</b>
+&nbsp;
+<b class="nc">&nbsp;            BlobId blobId = BlobId.of(bucketContext.getBucketName(), studyUid + &quot;.zip&quot;);</b>
+<b class="nc">&nbsp;            boolean deleted = storage.delete(blobId);</b>
+<b class="nc">&nbsp;            if (deleted) {</b>
+<b class="nc">&nbsp;                logger.info(&quot;deleteFolderFromBucket :: Folder: {}.zip deleted from bucket.&quot;, studyUid);</b>
+<b class="nc">&nbsp;                barcodeStudyInfo.remove(barcode);</b>
+&nbsp;            } else {
+<b class="nc">&nbsp;                logger.info(&quot;deleteFolderFromBucket :: Folder: {}.zip not found from bucket.&quot;, studyUid);</b>
+&nbsp;            }
+&nbsp;        } catch (IOException e) {
+<b class="fc">&nbsp;            logger.info(&quot;deleteFolderFromBucket :: IOException occurred while deleting the folder &quot;, e);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;}
+&nbsp;
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-02-26 18:07</div>
+</div>
+</body>
+</html>

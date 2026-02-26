@@ -1,0 +1,193 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > HealthcareApiClient</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.eh.digitalpathology.ibex.client</a>
+</div>
+
+<h1>Coverage Summary for Class: HealthcareApiClient (com.eh.digitalpathology.ibex.client)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">HealthcareApiClient</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    66.7%
+  </span>
+  <span class="absValue">
+    (4/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    90.5%
+  </span>
+  <span class="absValue">
+    (19/21)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;/**
+&nbsp; * HealthcareApiClient class acts as a client for the DICOM Healthcare API, encapsulating
+&nbsp; * the logic for API calls to DICOM stores. It provides a reusable and
+&nbsp; * modular approach for accessing healthcare DICOM data while managing
+&nbsp; * errors through custom exceptions.
+&nbsp; * Author: Preeti Ankam
+&nbsp; * Date: December 23, 2024
+&nbsp; */
+&nbsp;
+&nbsp;package com.eh.digitalpathology.ibex.client;
+&nbsp;
+&nbsp;import com.eh.digitalpathology.ibex.config.GcpConfig;
+&nbsp;import com.eh.digitalpathology.ibex.exceptions.HealthcareApiException;
+&nbsp;import com.eh.digitalpathology.ibex.util.GCPUtils;
+&nbsp;import com.eh.digitalpathology.ibex.util.HttpClientUtil;
+&nbsp;import com.eh.digitalpathology.ibex.model.HttpResponseWrapper;
+&nbsp;import org.apache.http.HttpStatus;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.springframework.http.HttpHeaders;
+&nbsp;import org.springframework.stereotype.Component;
+&nbsp;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.Map;
+&nbsp;
+&nbsp;@Component
+&nbsp;public class HealthcareApiClient {
+&nbsp;
+<b class="fc">&nbsp;    private final Logger log = LoggerFactory.getLogger(HealthcareApiClient.class.getName());</b>
+&nbsp;    private final GcpConfig gcpConfig;
+&nbsp;
+<b class="fc">&nbsp;    public HealthcareApiClient(GcpConfig gcpConfig) {</b>
+<b class="fc">&nbsp;        this.gcpConfig = gcpConfig;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Fetches metadata from the Healthcare API using the provided studyUid.
+&nbsp;     *
+&nbsp;     * @param studyUid The unique study identifier.
+&nbsp;     * @return Metadata as a JSON string.
+&nbsp;     * @throws HealthcareApiException If any error occurs during the API call.
+&nbsp;     */
+&nbsp;    public String fetchMetadata(String studyUid, String seriesId,String dicomWebUrl) throws HealthcareApiException {
+&nbsp;        try {
+<b class="fc">&nbsp;            log.info(&quot;fetchMetadata :: seriesId: {}&quot;, seriesId);</b>
+<b class="fc">&nbsp;            log.info(&quot;fetchMetadata :: dicomWebUrl: {}&quot;, dicomWebUrl);</b>
+<b class="fc">&nbsp;            String uri = String.format(&quot;%s/%s/dicomWeb/studies/%s/series/%s/metadata&quot;, this.gcpConfig.getDicomWebUrl(), dicomWebUrl, studyUid, seriesId);</b>
+&nbsp;
+<b class="fc">&nbsp;            log.info(&quot;fetchMetadata :: Constructed DICOM Store URI: {}&quot;, uri);</b>
+&nbsp;
+<b class="fc">&nbsp;            String accessToken = GCPUtils.getAccessToken(gcpConfig);</b>
+<b class="fc">&nbsp;            log.info(&quot;Access token retrieved successfully.&quot;);</b>
+&nbsp;
+&nbsp;            // Prepare headers
+<b class="fc">&nbsp;            Map&lt;String, String&gt; headers = new HashMap&lt;&gt;();</b>
+<b class="pc">&nbsp;            if (accessToken != null &amp;&amp; !accessToken.isEmpty()) {</b>
+<b class="fc">&nbsp;                headers.put(HttpHeaders.AUTHORIZATION, &quot;Bearer &quot; + accessToken);</b>
+&nbsp;            }
+<b class="fc">&nbsp;            headers.put(HttpHeaders.ACCEPT, &quot;application/dicom+json&quot;);</b>
+&nbsp;
+&nbsp;            // Send GET request using utility
+<b class="fc">&nbsp;            HttpResponseWrapper response = HttpClientUtil.sendGet(uri, headers);</b>
+<b class="fc">&nbsp;            int statusCode = response.statusCode();</b>
+<b class="fc">&nbsp;            String responseBody = response.body();</b>
+&nbsp;
+<b class="pc">&nbsp;            if (statusCode == HttpStatus.SC_OK) {</b>
+<b class="fc">&nbsp;                return responseBody;</b>
+&nbsp;            } else {
+<b class="nc">&nbsp;                log.error(&quot;Failed to fetch metadata. Status: {}, Body: {}&quot;, statusCode, responseBody);</b>
+<b class="nc">&nbsp;                throw new HealthcareApiException(&quot;Failed to fetch metadata. Status: &quot; + statusCode + &quot; :: &quot; + responseBody);</b>
+&nbsp;            }
+&nbsp;
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            throw new HealthcareApiException(&quot;Error occurred while fetching metadata from the Healthcare API.&quot;, e);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-02-26 18:07</div>
+</div>
+</body>
+</html>

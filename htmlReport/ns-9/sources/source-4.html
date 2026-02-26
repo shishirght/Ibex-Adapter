@@ -1,0 +1,219 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > HttpClientUtil</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.eh.digitalpathology.ibex.util</a>
+</div>
+
+<h1>Coverage Summary for Class: HttpClientUtil (com.eh.digitalpathology.ibex.util)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">HttpClientUtil</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    16.7%
+  </span>
+  <span class="absValue">
+    (1/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    2.5%
+  </span>
+  <span class="absValue">
+    (1/40)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.eh.digitalpathology.ibex.util;
+&nbsp;
+&nbsp;import com.eh.digitalpathology.ibex.exceptions.HealthcareApiException;
+&nbsp;import com.eh.digitalpathology.ibex.model.HttpResponseWrapper;
+&nbsp;import org.apache.http.HttpEntity;
+&nbsp;import org.apache.http.client.config.RequestConfig;
+&nbsp;import org.apache.http.client.methods.CloseableHttpResponse;
+&nbsp;import org.apache.http.client.methods.HttpGet;
+&nbsp;import org.apache.http.client.methods.HttpPost;
+&nbsp;import org.apache.http.client.methods.HttpPut;
+&nbsp;import org.apache.http.entity.ContentType;
+&nbsp;import org.apache.http.entity.StringEntity;
+&nbsp;import org.apache.http.impl.client.CloseableHttpClient;
+&nbsp;import org.apache.http.impl.client.HttpClients;
+&nbsp;import org.apache.http.util.EntityUtils;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;
+&nbsp;import java.io.IOException;
+&nbsp;import java.util.Map;
+&nbsp;
+&nbsp;public class HttpClientUtil {
+&nbsp;
+&nbsp;    private static final int TIMEOUT = 120000;
+<b class="fc">&nbsp;    private static final Logger logger = LoggerFactory.getLogger( HttpClientUtil.class );</b>
+&nbsp;
+&nbsp;    private HttpClientUtil ( ) {
+&nbsp;    }
+&nbsp;
+&nbsp;    private static CloseableHttpClient createClient ( ) {
+<b class="nc">&nbsp;        RequestConfig config = RequestConfig.custom( ).setConnectTimeout( TIMEOUT ).setSocketTimeout( TIMEOUT ).setConnectionRequestTimeout( TIMEOUT ).build( );</b>
+<b class="nc">&nbsp;        return HttpClients.custom( ).setDefaultRequestConfig( config ).build( );</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public static HttpResponseWrapper sendGet ( String url, Map&lt; String, String &gt; headers ) throws HealthcareApiException {
+<b class="nc">&nbsp;        try ( CloseableHttpClient client = createClient( ) ) {</b>
+<b class="nc">&nbsp;            HttpGet request = new HttpGet( url );</b>
+<b class="nc">&nbsp;            headers.forEach( request::setHeader );</b>
+&nbsp;
+<b class="nc">&nbsp;            logger.info( &quot;sendGet :: Sending GET request to URL: {} &quot;, url );</b>
+&nbsp;
+<b class="nc">&nbsp;            try ( CloseableHttpResponse response = client.execute( request ) ) {</b>
+<b class="nc">&nbsp;                int statusCode = response.getStatusLine( ).getStatusCode( );</b>
+<b class="nc">&nbsp;                HttpEntity entity = response.getEntity( );</b>
+<b class="nc">&nbsp;                String responseBody = entity != null ? EntityUtils.toString( entity ) : &quot;&quot;;</b>
+&nbsp;
+<b class="nc">&nbsp;                return new HttpResponseWrapper( statusCode, responseBody );</b>
+&nbsp;            }
+&nbsp;        } catch ( IOException e ) {
+<b class="nc">&nbsp;            throw new HealthcareApiException( &quot;IOException occurred while sending GET request: &quot; + e.getMessage( ), e );</b>
+&nbsp;        } catch ( Exception ex ) {
+<b class="nc">&nbsp;            throw new HealthcareApiException( &quot;Exception occurred while sending GET request: &quot; + ex.getMessage( ), ex );</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    public static HttpResponseWrapper sendPost ( String url, String body, Map&lt; String, String &gt; headers ) throws HealthcareApiException {
+<b class="nc">&nbsp;        try ( CloseableHttpClient client = createClient( ) ) {</b>
+<b class="nc">&nbsp;            HttpPost request = new HttpPost( url );</b>
+<b class="nc">&nbsp;            headers.forEach( request::setHeader );</b>
+<b class="nc">&nbsp;            request.setEntity( new StringEntity( body, ContentType.APPLICATION_JSON ) );</b>
+&nbsp;
+<b class="nc">&nbsp;            try ( CloseableHttpResponse response = client.execute( request ) ) {</b>
+<b class="nc">&nbsp;                int statusCode = response.getStatusLine( ).getStatusCode( );</b>
+<b class="nc">&nbsp;                HttpEntity entity = response.getEntity( );</b>
+<b class="nc">&nbsp;                String responseBody = entity != null ? EntityUtils.toString( entity ) : &quot;&quot;;</b>
+<b class="nc">&nbsp;                return new HttpResponseWrapper( statusCode, responseBody );</b>
+&nbsp;            }
+&nbsp;        } catch ( IOException e ) {
+<b class="nc">&nbsp;            throw new HealthcareApiException( &quot;IOException occurred while sending POST request: &quot; + e.getMessage( ), e );</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    public static HttpResponseWrapper sendPut ( String url, String body, Map&lt; String, String &gt; headers ) throws HealthcareApiException {
+<b class="nc">&nbsp;        try ( CloseableHttpClient client = createClient( ) ) {</b>
+<b class="nc">&nbsp;            HttpPut request = new HttpPut( url );</b>
+<b class="nc">&nbsp;            headers.forEach( request::setHeader );</b>
+<b class="nc">&nbsp;            request.setEntity( new StringEntity( body, ContentType.APPLICATION_JSON ) );</b>
+&nbsp;
+<b class="nc">&nbsp;            try ( CloseableHttpResponse response = client.execute( request ) ) {</b>
+<b class="nc">&nbsp;                int statusCode = response.getStatusLine( ).getStatusCode( );</b>
+<b class="nc">&nbsp;                HttpEntity entity = response.getEntity( );</b>
+<b class="nc">&nbsp;                String responseBody = entity != null ? EntityUtils.toString( entity ) : &quot;&quot;;</b>
+<b class="nc">&nbsp;                return new HttpResponseWrapper( statusCode, responseBody );</b>
+&nbsp;            }
+&nbsp;        } catch ( Exception ex ) {
+<b class="nc">&nbsp;            throw new HealthcareApiException( ex.getMessage( ) );</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    public static byte[] getImageBytes ( String url, Map&lt; String, String &gt; headers ) throws HealthcareApiException {
+<b class="nc">&nbsp;        try ( CloseableHttpClient client = createClient( ) ) {</b>
+<b class="nc">&nbsp;            HttpGet request = new HttpGet( url );</b>
+<b class="nc">&nbsp;            headers.forEach( request::setHeader );</b>
+<b class="nc">&nbsp;            try ( CloseableHttpResponse response = client.execute( request ) ) {</b>
+<b class="nc">&nbsp;                return EntityUtils.toByteArray( response.getEntity( ) );</b>
+&nbsp;            }
+&nbsp;        } catch ( Exception ex ) {
+<b class="nc">&nbsp;            throw new HealthcareApiException( ex.getMessage( ) );</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-02-26 18:07</div>
+</div>
+</body>
+</html>

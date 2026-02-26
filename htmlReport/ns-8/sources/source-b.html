@@ -1,0 +1,178 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > SignedUrlCreationService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.eh.digitalpathology.ibex.service</a>
+</div>
+
+<h1>Coverage Summary for Class: SignedUrlCreationService (com.eh.digitalpathology.ibex.service)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">SignedUrlCreationService</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    93.8%
+  </span>
+  <span class="absValue">
+    (15/16)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;/**
+&nbsp; * SignedUrlCreationService is used to generate the signed url for downloading the study.
+&nbsp; * It fetches the encrypted key from runtime config and decrypt it using AES algorithm.
+&nbsp; * Author: Preeti Ankam
+&nbsp; * Date: November 15, 2024
+&nbsp; */
+&nbsp;
+&nbsp;package com.eh.digitalpathology.ibex.service;
+&nbsp;
+&nbsp;import com.google.cloud.storage.BlobInfo;
+&nbsp;import com.google.cloud.storage.Storage;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.springframework.beans.factory.annotation.Value;
+&nbsp;import org.springframework.cloud.context.config.annotation.RefreshScope;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.io.IOException;
+&nbsp;import java.net.MalformedURLException;
+&nbsp;import java.net.URI;
+&nbsp;import java.net.URL;
+&nbsp;import java.util.concurrent.TimeUnit;
+&nbsp;import java.util.regex.Matcher;
+&nbsp;import java.util.regex.Pattern;
+&nbsp;
+&nbsp;@RefreshScope
+&nbsp;@Service
+&nbsp;public class SignedUrlCreationService {
+<b class="fc">&nbsp;    private static final Logger logger = LoggerFactory.getLogger( SignedUrlCreationService.class );</b>
+&nbsp;
+&nbsp;    @Value(&quot;${signed.url.validity:30}&quot;)
+&nbsp;    private long urlValidity;
+&nbsp;
+&nbsp;    private final Storage storage;
+&nbsp;
+<b class="fc">&nbsp;    public SignedUrlCreationService ( Storage storage ) {</b>
+<b class="fc">&nbsp;        this.storage = storage;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public String generateSignedUrl ( String urlString ) throws MalformedURLException {
+&nbsp;        try {
+<b class="fc">&nbsp;            URI uri = new URI( urlString );</b>
+<b class="fc">&nbsp;            URL url = uri.toURL( );</b>
+<b class="fc">&nbsp;            Pattern urlPattern = Pattern.compile( &quot;/b/([^/]+)/o/([^?]+)&quot; );</b>
+<b class="fc">&nbsp;            Matcher urlMatcher = urlPattern.matcher( url.getPath( ) );</b>
+&nbsp;
+<b class="fc">&nbsp;            if ( urlMatcher.find( ) ) {</b>
+<b class="fc">&nbsp;                String bucketName = urlMatcher.group( 1 );</b>
+<b class="fc">&nbsp;                String objectName = urlMatcher.group( 2 );</b>
+<b class="fc">&nbsp;                BlobInfo blobInfo = BlobInfo.newBuilder( bucketName, objectName ).build( );</b>
+<b class="fc">&nbsp;                URL signedUrl = storage.signUrl( blobInfo, urlValidity , TimeUnit.MINUTES, Storage.SignUrlOption.withV4Signature( ) );</b>
+<b class="fc">&nbsp;                return signedUrl.toString( );</b>
+&nbsp;            }
+&nbsp;        } catch ( IOException e ) {
+<b class="nc">&nbsp;            logger.error( &quot;generateSignedUrl :: Error generating signed URL: {}&quot;, e.getMessage( ) );</b>
+&nbsp;        } catch ( Exception e ) {
+<b class="fc">&nbsp;            logger.error( &quot;generateSignedUrl :: Unexpected error: &quot;, e );</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return urlString;</b>
+&nbsp;    }
+&nbsp;}
+&nbsp;
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-02-26 18:07</div>
+</div>
+</body>
+</html>

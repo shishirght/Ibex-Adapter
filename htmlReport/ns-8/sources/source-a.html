@@ -1,0 +1,145 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > PubSubPullService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.eh.digitalpathology.ibex.service</a>
+</div>
+
+<h1>Coverage Summary for Class: PubSubPullService (com.eh.digitalpathology.ibex.service)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">PubSubPullService</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (2/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    25%
+  </span>
+  <span class="absValue">
+    (3/12)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.eh.digitalpathology.ibex.service;
+&nbsp;
+&nbsp;import com.google.cloud.pubsub.v1.AckReplyConsumer;
+&nbsp;import com.google.cloud.pubsub.v1.Subscriber;
+&nbsp;import com.google.pubsub.v1.ProjectSubscriptionName;
+&nbsp;import com.google.pubsub.v1.PubsubMessage;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.boot.context.event.ApplicationReadyEvent;
+&nbsp;import org.springframework.context.event.EventListener;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;@Service
+&nbsp;public class PubSubPullService {
+&nbsp;    private static final String PROJECT_ID = &quot;prj-d-path-integration-cs1h&quot;;
+&nbsp;    private static final String SUBSCRIPTION_ID = &quot;ibex-sub&quot;;
+<b class="fc">&nbsp;    private static final Logger logger = LoggerFactory.getLogger( PubSubPullService.class );</b>
+&nbsp;    private final NotificationService notifiationService;
+&nbsp;
+&nbsp;    @Autowired
+<b class="fc">&nbsp;    public PubSubPullService ( NotificationService notifiationService ) {</b>
+<b class="fc">&nbsp;        this.notifiationService = notifiationService;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    @EventListener( ApplicationReadyEvent.class )
+&nbsp;    public void startPulling ( ) {
+<b class="nc">&nbsp;        ProjectSubscriptionName subscriptionName = ProjectSubscriptionName.of( PROJECT_ID, SUBSCRIPTION_ID );</b>
+<b class="nc">&nbsp;        Subscriber subscriber = Subscriber.newBuilder( subscriptionName, ( PubsubMessage message, AckReplyConsumer consumer ) -&gt; {</b>
+<b class="nc">&nbsp;            String payload = message.getData( ).toStringUtf8( );</b>
+<b class="nc">&nbsp;            logger.info( &quot;startPulling :: Received pull message:{} &quot;, payload );</b>
+<b class="nc">&nbsp;            consumer.ack( );</b>
+<b class="nc">&nbsp;            notifiationService.processNotifications( payload );</b>
+<b class="nc">&nbsp;        } ).build( );</b>
+&nbsp;
+<b class="nc">&nbsp;        subscriber.startAsync( ).awaitRunning( );</b>
+<b class="nc">&nbsp;        logger.info( &quot;startPulling :: Started pulling messages...&quot; );</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-02-26 18:07</div>
+</div>
+</body>
+</html>

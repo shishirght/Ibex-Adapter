@@ -1,0 +1,181 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > IbexConfig</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.eh.digitalpathology.ibex.config</a>
+</div>
+
+<h1>Coverage Summary for Class: IbexConfig (com.eh.digitalpathology.ibex.config)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">IbexConfig</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">IbexConfig$Api</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (10/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (10/10)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.eh.digitalpathology.ibex.config;
+&nbsp;
+&nbsp;import org.springframework.boot.context.properties.ConfigurationProperties;
+&nbsp;import org.springframework.cloud.context.config.annotation.RefreshScope;
+&nbsp;import org.springframework.context.annotation.Configuration;
+&nbsp;
+&nbsp;@Configuration
+&nbsp;@ConfigurationProperties(prefix = &quot;ibex&quot;)
+&nbsp;@RefreshScope
+<b class="fc">&nbsp;public class IbexConfig {</b>
+&nbsp;
+&nbsp;    private Api api;
+&nbsp;    private String callbackUrl;
+&nbsp;
+&nbsp;    public Api getApi ( ) {
+<b class="fc">&nbsp;        return api;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void setApi ( Api api ) {
+<b class="fc">&nbsp;        this.api = api;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public String getCallbackUrl ( ) {
+<b class="fc">&nbsp;        return callbackUrl;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void setCallbackUrl ( String callbackUrl ) {
+<b class="fc">&nbsp;        this.callbackUrl = callbackUrl;</b>
+&nbsp;    }
+&nbsp;
+<b class="fc">&nbsp;    public static class Api {</b>
+&nbsp;       private String url;
+&nbsp;       private String key;
+&nbsp;
+&nbsp;        public String getUrl ( ) {
+<b class="fc">&nbsp;            return url;</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        public void setUrl ( String url ) {
+<b class="fc">&nbsp;            this.url = url;</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        public String getKey ( ) {
+<b class="fc">&nbsp;            return key;</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        public void setKey ( String key ) {
+<b class="fc">&nbsp;            this.key = key;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-02-26 18:07</div>
+</div>
+</body>
+</html>

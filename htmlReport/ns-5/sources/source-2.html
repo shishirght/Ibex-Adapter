@@ -1,0 +1,162 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > StainNames</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.eh.digitalpathology.ibex.enums</a>
+</div>
+
+<h1>Coverage Summary for Class: StainNames (com.eh.digitalpathology.ibex.enums)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">StainNames</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (8/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (16/16)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;/**
+&nbsp; * ValidStain is an enum of valid stains for slide creation.
+&nbsp; * Author: Preeti Ankam
+&nbsp; * Date:December 23, 2024
+&nbsp; */
+&nbsp;
+&nbsp;package com.eh.digitalpathology.ibex.enums;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;
+<b class="fc">&nbsp;public enum StainNames {</b>
+<b class="fc">&nbsp;    H_E(&quot;H&amp;E&quot;, List.of(&quot;Hematoxylin &amp; Eosin&quot;, &quot;H&amp;E IHC&quot;, &quot;X HPV High Risk ISH&quot;)),</b>
+&nbsp;   // ER(&quot;ER&quot;, List.of(&quot;ER&quot;, &quot;ER Breast Prognostic Marker&quot;, &quot;X SW ER Control&quot;)),
+<b class="fc">&nbsp;    PR(&quot;PR&quot;, List.of(&quot;X SW PR Control&quot;, &quot;PR Breast Prognostic Marker&quot;, &quot;PR&quot;)),</b>
+<b class="fc">&nbsp;    HER2(&quot;HER2&quot;, List.of(&quot;FISH - Her-2/neu&quot;, &quot;X HER2 Neg Control&quot;, &quot;HER-2/neu&quot;, &quot;HER-2/neu Breast Prognostic Marker&quot;, &quot;X Her-2/neu by In Situ Hybrdization&quot;)),</b>
+<b class="fc">&nbsp;    KI67(&quot;Ki67&quot;, List.of(&quot;Ki-67&quot;, &quot;Ki-67 Quantitative&quot;, &quot;X SW Ki-67 Control&quot;, &quot;X PanMelanoma+Ki-67 (LABEL ONLY)&quot;)),</b>
+<b class="fc">&nbsp;    OTHER(&quot;Other&quot;, List.of());</b>
+&nbsp;
+&nbsp;    private final String stain;
+&nbsp;
+&nbsp;    private final List&lt;String&gt; aliases;
+&nbsp;
+<b class="fc">&nbsp;    StainNames(String stain, List&lt;String&gt; aliases) {</b>
+<b class="fc">&nbsp;        this.stain = stain;</b>
+<b class="fc">&nbsp;        this.aliases = aliases;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    public String getStain() {
+<b class="fc">&nbsp;        return stain;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public static StainNames fromStain(String input) {
+<b class="fc">&nbsp;        for (StainNames validStain : StainNames.values()) {</b>
+<b class="fc">&nbsp;            if (validStain != OTHER) {</b>
+<b class="fc">&nbsp;                for (String alias : validStain.aliases) {</b>
+<b class="fc">&nbsp;                    if (alias.equalsIgnoreCase(input.trim())) {</b>
+<b class="fc">&nbsp;                        return validStain;</b>
+&nbsp;                    }
+&nbsp;                }
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        return OTHER;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-02-26 18:07</div>
+</div>
+</body>
+</html>

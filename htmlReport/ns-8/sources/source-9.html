@@ -1,0 +1,209 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > NotificationService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.eh.digitalpathology.ibex.service</a>
+</div>
+
+<h1>Coverage Summary for Class: NotificationService (com.eh.digitalpathology.ibex.service)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">NotificationService</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    75%
+  </span>
+  <span class="absValue">
+    (3/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    41.7%
+  </span>
+  <span class="absValue">
+    (5/12)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    43.6%
+  </span>
+  <span class="absValue">
+    (17/39)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.eh.digitalpathology.ibex.service;
+&nbsp;
+&nbsp;import com.eh.digitalpathology.ibex.config.GcpConfig;
+&nbsp;import com.fasterxml.jackson.databind.JsonMappingException;
+&nbsp;import com.fasterxml.jackson.databind.JsonNode;
+&nbsp;import com.fasterxml.jackson.databind.ObjectMapper;
+&nbsp;import com.google.auth.oauth2.ServiceAccountCredentials;
+&nbsp;import com.google.cloud.storage.Blob;
+&nbsp;import com.google.cloud.storage.Storage;
+&nbsp;import com.google.cloud.storage.StorageOptions;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.springframework.beans.factory.annotation.Qualifier;
+&nbsp;import org.springframework.http.HttpStatus;
+&nbsp;import org.springframework.http.ResponseEntity;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.io.ByteArrayInputStream;
+&nbsp;import java.io.IOException;
+&nbsp;import java.nio.charset.StandardCharsets;
+&nbsp;import java.util.Map;
+&nbsp;import java.util.concurrent.ExecutorService;
+&nbsp;
+&nbsp;@Service
+&nbsp;public class NotificationService {
+<b class="fc">&nbsp;    private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);</b>
+&nbsp;    private final IbexAdapterService ibexAdapterService;
+&nbsp;    private final ExecutorService executorService;
+&nbsp;    private final BarcodeStudyInfo barcodeStudyInfo;
+&nbsp;    private final GcpConfig gcpConfig;
+&nbsp;    private final BucketContext bucketContext;
+&nbsp;
+<b class="fc">&nbsp;    public NotificationService(IbexAdapterService ibexAdapterService, @Qualifier(&quot;ibexExecutorService&quot;) ExecutorService executorService, BarcodeStudyInfo barcodeStudyInfo, GcpConfig gcpConfig, BucketContext bucketContext) {</b>
+<b class="fc">&nbsp;        this.ibexAdapterService = ibexAdapterService;</b>
+<b class="fc">&nbsp;        this.executorService = executorService;</b>
+<b class="fc">&nbsp;        this.barcodeStudyInfo = barcodeStudyInfo;</b>
+<b class="fc">&nbsp;        this.gcpConfig = gcpConfig;</b>
+<b class="fc">&nbsp;        this.bucketContext = bucketContext;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public ResponseEntity&lt;String&gt; processNotifications(String messagePayload) {
+&nbsp;        try {
+<b class="fc">&nbsp;            if (messagePayload == null || messagePayload.isEmpty()) {</b>
+<b class="fc">&nbsp;                logger.error(&quot;processNotifications :: Message payload is null or empty&quot;);</b>
+<b class="fc">&nbsp;                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(&quot;Message payload is null or empty&quot;);</b>
+&nbsp;            }
+<b class="fc">&nbsp;            ObjectMapper mapper = new ObjectMapper();</b>
+<b class="fc">&nbsp;            JsonNode root = mapper.readTree(messagePayload);</b>
+<b class="fc">&nbsp;            String name = root.path(&quot;name&quot;).asText();</b>
+<b class="fc">&nbsp;            String mediaLink = root.path(&quot;mediaLink&quot;).asText();</b>
+<b class="pc">&nbsp;            if (!name.endsWith(&quot;.zip&quot;)) {</b>
+<b class="fc">&nbsp;                logger.info(&quot;processNotifications :: Skipping non-ZIP file: {}&quot;, name);</b>
+<b class="fc">&nbsp;                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(&quot;Invalid file format&quot;);</b>
+&nbsp;            }
+<b class="nc">&nbsp;            String studyUid = name.substring(0, name.lastIndexOf(&quot;.&quot;));</b>
+&nbsp;            //Fetch Object metadata
+<b class="nc">&nbsp;            String bucket = root.path(&quot;bucket&quot;).asText();</b>
+<b class="nc">&nbsp;            bucketContext.setBucketName(bucket);</b>
+<b class="nc">&nbsp;            Storage storage = getStorage();</b>
+<b class="nc">&nbsp;            if (storage == null) {</b>
+<b class="nc">&nbsp;                logger.error(&quot;processNotifications ::unable to get access to storage&quot;);</b>
+<b class="nc">&nbsp;                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(&quot;No storage data is found&quot;);</b>
+&nbsp;            }
+<b class="nc">&nbsp;            Blob blob = storage.get(bucket, name);</b>
+<b class="nc">&nbsp;            if (blob != null &amp;&amp; blob.getMetadata() != null) {</b>
+<b class="nc">&nbsp;                Map&lt;String, String&gt; metadata = blob.getMetadata();</b>
+<b class="nc">&nbsp;                barcodeStudyInfo.put(metadata.get(&quot;barcode&quot;), studyUid);</b>
+<b class="nc">&nbsp;                executorService.submit(() -&gt; ibexAdapterService.createCaseAndSlide(studyUid, mediaLink, metadata.get(&quot;barcode&quot;), metadata.get(&quot;seriesid&quot;), metadata.get(&quot;dicomstoreurl&quot;)));</b>
+<b class="nc">&nbsp;                return ResponseEntity.ok(&quot;Processed&quot;);</b>
+&nbsp;            } else {
+<b class="nc">&nbsp;                logger.error(&quot;processNotifications :: No metadata found for object: {}&quot;, name);</b>
+<b class="nc">&nbsp;                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(&quot;No metadata found for object&quot;);</b>
+&nbsp;            }
+&nbsp;
+&nbsp;        } catch (JsonMappingException e) {
+<b class="nc">&nbsp;            logger.error(&quot;processNotifications :: Failed to parse JSON: {}&quot;, e.getMessage());</b>
+<b class="nc">&nbsp;            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(&quot;Failed to parse JSON&quot;);</b>
+&nbsp;        } catch (Exception e) {
+<b class="nc">&nbsp;            logger.error(&quot;processNotifications :: Unexpected error occurred while processing the notifications: &quot;, e);</b>
+<b class="nc">&nbsp;            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(&quot;Unexpected error occurred&quot;);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private Storage getStorage() {
+&nbsp;        try {
+<b class="nc">&nbsp;            return StorageOptions.newBuilder().setCredentials(ServiceAccountCredentials.fromStream(new ByteArrayInputStream(gcpConfig.getCreds().getBytes(StandardCharsets.UTF_8)))).build().getService();</b>
+&nbsp;        } catch (IOException e) {
+<b class="nc">&nbsp;            logger.error(&quot;getStorage :: unable to get access to storage :: {}&quot;, e.getMessage());</b>
+<b class="nc">&nbsp;            return null;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-02-26 18:07</div>
+</div>
+</body>
+</html>

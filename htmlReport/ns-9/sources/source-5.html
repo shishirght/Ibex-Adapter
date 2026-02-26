@@ -1,0 +1,164 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > SignatureUtils</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.eh.digitalpathology.ibex.util</a>
+</div>
+
+<h1>Coverage Summary for Class: SignatureUtils (com.eh.digitalpathology.ibex.util)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">SignatureUtils</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (12/12)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.eh.digitalpathology.ibex.util;
+&nbsp;
+&nbsp;import org.springframework.beans.factory.annotation.Value;
+&nbsp;import org.springframework.cloud.context.config.annotation.RefreshScope;
+&nbsp;import org.springframework.stereotype.Component;
+&nbsp;
+&nbsp;import javax.crypto.Mac;
+&nbsp;import javax.crypto.spec.SecretKeySpec;
+&nbsp;import java.nio.charset.StandardCharsets;
+&nbsp;import java.time.Instant;
+&nbsp;import java.util.Base64;
+&nbsp;
+&nbsp;@Component
+&nbsp;@RefreshScope
+<b class="fc">&nbsp;public class SignatureUtils {</b>
+&nbsp;
+&nbsp;    @Value( &quot;${app.hmac-secret}&quot; )
+&nbsp;    private String hmacSecret;
+&nbsp;
+&nbsp;    public String signCanonical ( String canonical ) {
+&nbsp;        try {
+<b class="fc">&nbsp;            Mac mac = Mac.getInstance( &quot;HmacSHA256&quot; );</b>
+<b class="fc">&nbsp;            mac.init( new SecretKeySpec( hmacSecret.getBytes( StandardCharsets.UTF_8 ), &quot;HmacSHA256&quot; ) );</b>
+<b class="fc">&nbsp;            byte[] raw = mac.doFinal( canonical.getBytes( StandardCharsets.UTF_8 ) );</b>
+<b class="fc">&nbsp;            return Base64.getUrlEncoder( ).withoutPadding( ).encodeToString( raw );</b>
+&nbsp;        } catch ( Exception e ) {
+<b class="fc">&nbsp;            throw new IllegalStateException( &quot;Failed to sign canonical string&quot;, e );</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    public boolean verify ( String providedSig, String canonical ) {
+&nbsp;        try {
+<b class="fc">&nbsp;            byte[] expectedSig = Base64.getUrlDecoder( ).decode( signCanonical( canonical ) );</b>
+<b class="fc">&nbsp;            byte[] actualSig = Base64.getUrlDecoder( ).decode( providedSig );</b>
+<b class="fc">&nbsp;            return java.security.MessageDigest.isEqual( expectedSig, actualSig );</b>
+&nbsp;        } catch ( Exception e ) {
+<b class="fc">&nbsp;            return false;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    public String canonical ( String method, String path, String bucket, String object, Long generation, long expiresEpochSec ) {
+<b class="fc">&nbsp;        return String.join( &quot;\n&quot;, method, path, bucket, object, generation == null ? &quot;&quot; : generation.toString( ), String.valueOf( expiresEpochSec ) );</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public boolean isExpired ( long expiresEpochSec ) {
+<b class="fc">&nbsp;        return Instant.now( ).getEpochSecond( ) &gt; expiresEpochSec;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-02-26 18:07</div>
+</div>
+</body>
+</html>

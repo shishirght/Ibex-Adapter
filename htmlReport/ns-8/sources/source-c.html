@@ -1,0 +1,303 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > SlideService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.eh.digitalpathology.ibex.service</a>
+</div>
+
+<h1>Coverage Summary for Class: SlideService (com.eh.digitalpathology.ibex.service)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">SlideService</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    87.5%
+  </span>
+  <span class="absValue">
+    (7/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    34.6%
+  </span>
+  <span class="absValue">
+    (9/26)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    61.8%
+  </span>
+  <span class="absValue">
+    (47/76)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;/**
+&nbsp; * SlideService is used to fetch all the required data for slide creation and create the slide.
+&nbsp; * Author: Preeti Ankam
+&nbsp; * Date: October 30, 2024
+&nbsp; */
+&nbsp;
+&nbsp;package com.eh.digitalpathology.ibex.service;
+&nbsp;
+&nbsp;import com.eh.digitalpathology.ibex.client.IbexApiClient;
+&nbsp;import com.eh.digitalpathology.ibex.config.OrganMappingConfig;
+&nbsp;import com.eh.digitalpathology.ibex.constants.AppConstants;
+&nbsp;import com.eh.digitalpathology.ibex.enums.StainNames;
+&nbsp;import com.eh.digitalpathology.ibex.exceptions.IbexApiException;
+&nbsp;import com.eh.digitalpathology.ibex.exceptions.SignedUrlGenerationException;
+&nbsp;import com.eh.digitalpathology.ibex.model.BarcodeInstanceRequest;
+&nbsp;import com.eh.digitalpathology.ibex.model.Slide;
+&nbsp;import com.eh.digitalpathology.ibex.model.SlideScanProgressEvent;
+&nbsp;import com.eh.digitalpathology.ibex.util.AppUtil;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.springframework.beans.factory.annotation.Value;
+&nbsp;import org.springframework.cloud.context.config.annotation.RefreshScope;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.io.IOException;
+&nbsp;import java.net.URI;
+&nbsp;import java.net.URLDecoder;
+&nbsp;import java.nio.charset.StandardCharsets;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.util.Map;
+&nbsp;import java.util.Optional;
+&nbsp;import java.util.regex.Matcher;
+&nbsp;import java.util.regex.Pattern;
+&nbsp;
+&nbsp;@Service
+&nbsp;@RefreshScope
+&nbsp;public class SlideService {
+<b class="fc">&nbsp;    private static final Logger logger = LoggerFactory.getLogger(SlideService.class);</b>
+&nbsp;    private final SignedUrlCreationService signedUrlCreationService;
+&nbsp;    private final IbexApiClient ibexApiClient;
+&nbsp;    private final OrganMappingConfig organMappingConfig;
+&nbsp;    private final ApiSignedUrlService apiSignedUrlService;
+&nbsp;    private final KafkaNotificationProducer kafkaNotificationProducer;
+&nbsp;
+&nbsp;    @Value( &quot;${network.enabled}&quot; )
+&nbsp;    private boolean networkEnabled;
+&nbsp;
+<b class="fc">&nbsp;    public SlideService( SignedUrlCreationService signedUrlCreationService, IbexApiClient ibexApiClient, OrganMappingConfig organMappingConfig, KafkaNotificationProducer kafkaNotificationProducer, ApiSignedUrlService apiSignedUrlService ) {</b>
+<b class="fc">&nbsp;        this.signedUrlCreationService = signedUrlCreationService;</b>
+<b class="fc">&nbsp;        this.ibexApiClient = ibexApiClient;</b>
+<b class="fc">&nbsp;        this.organMappingConfig = organMappingConfig;</b>
+<b class="fc">&nbsp;        this.kafkaNotificationProducer = kafkaNotificationProducer;</b>
+<b class="fc">&nbsp;        this.apiSignedUrlService = apiSignedUrlService;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void createSlide(Map&lt;String, Object&gt; metadataMap, String studyUid, String seriesUid, String sourceUrl, String barcode) throws IbexApiException {
+<b class="fc">&nbsp;        String caseId = AppUtil.getTagValue(metadataMap, AppConstants.ACCESSION_NO_TAG_KEY);</b>
+<b class="fc">&nbsp;        Map&lt;String, String&gt; organCodeMap = AppUtil.extractOrganType(metadataMap, AppConstants.SPECIMEN_DESCRIPTION_SEQUENCE, AppConstants.PRIMARY_ANATOMIC_STRUCTURE_SEQ, AppConstants.CODE_VALUE, AppConstants.CODE_MEANING);</b>
+&nbsp;
+<b class="pc">&nbsp;        if (organCodeMap.isEmpty()) {</b>
+<b class="nc">&nbsp;            logger.warn(&quot;createSlide :: No organ code found in metadata. Skipping case and slide creation.&quot;);</b>
+&nbsp;            return;
+&nbsp;        }
+<b class="fc">&nbsp;        organCodeMap.forEach((key, value) -&gt; logger.info(&quot;buildSlide :: Code key : {} Code value: {}&quot;, key, value));</b>
+&nbsp;
+<b class="fc">&nbsp;        String organCode = organCodeMap.values().iterator().next().toLowerCase();</b>
+<b class="fc">&nbsp;        String organ = resolveOrgan(organCode);</b>
+&nbsp;
+<b class="fc">&nbsp;        if (isAllowedOrgan(organ)) {</b>
+<b class="fc">&nbsp;            logger.info(&quot;createSlide :: Proceeding with organ: {}&quot;, organ);</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            SlideScanProgressEvent slideScanProgressEvent = new SlideScanProgressEvent(barcode,&quot;ibex-warning-completed&quot;,&quot;Unsupported organ detected: &quot;+organ);</b>
+<b class="fc">&nbsp;            kafkaNotificationProducer.notifyScanProgress(slideScanProgressEvent);</b>
+<b class="fc">&nbsp;            logger.info(&quot;createSlide :: Unsupported organ detected: &#39;{}&#39;. Skipping case and slide creation.&quot;,</b>
+&nbsp;                    organ);
+&nbsp;            return;
+&nbsp;        }
+&nbsp;
+<b class="pc">&nbsp;        if (AppUtil.validate(barcode) &amp;&amp; AppUtil.validate(caseId)) {</b>
+<b class="fc">&nbsp;            Slide newSlide = buildSlide(metadataMap, sourceUrl, caseId, barcode, organ);</b>
+<b class="fc">&nbsp;            String jsonRequestBody = AppUtil.convertObjectToString(newSlide);</b>
+<b class="pc">&nbsp;            if (jsonRequestBody != null) {</b>
+&nbsp;                try {
+<b class="fc">&nbsp;                    ibexApiClient.createSlide(jsonRequestBody, barcode,seriesUid);</b>
+<b class="fc">&nbsp;                    logger.info(&quot;createSlide :: Case and slide creation completed for study uid: {} , series uid:{}.&quot;, studyUid, seriesUid);</b>
+&nbsp;                } catch (IbexApiException ex) {
+<b class="nc">&nbsp;                    throw new IbexApiException(ex);</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;        } else {
+<b class="fc">&nbsp;            String errorMessage = String.format(&quot;400 BAD REQUEST: CHECK REQUEST DATA: Invalid Barcode value: %s or Invalid Case Id: %s for study uid: %s , series uid:%s&quot;, barcode, caseId, studyUid, seriesUid);</b>
+<b class="fc">&nbsp;            BarcodeInstanceRequest barcodeInstanceRequest = new BarcodeInstanceRequest(barcode,null,seriesUid,errorMessage);</b>
+<b class="fc">&nbsp;            kafkaNotificationProducer.notifyScanProgressAndUpdateDicomInstances(new SlideScanProgressEvent(barcode,&quot;ibex-invalid-data&quot;),barcodeInstanceRequest);</b>
+<b class="fc">&nbsp;            throw new IbexApiException(errorMessage);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private boolean isAllowedOrgan(String organ) {
+<b class="fc">&nbsp;        logger.info(&quot;Allowed organs from config: {}&quot;, organMappingConfig.getAllowed());</b>
+<b class="fc">&nbsp;        return organMappingConfig.getAllowed().contains(organ.toLowerCase());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    private Slide buildSlide(Map&lt;String, Object&gt; metadataMap, String sourceUrl, String caseId, String barcodeValue, String organ) {
+<b class="fc">&nbsp;        Optional&lt;String&gt; stain = AppUtil.getStainValue(metadataMap);</b>
+<b class="fc">&nbsp;        Slide newSlide = new Slide();</b>
+<b class="fc">&nbsp;        newSlide.setId(barcodeValue);</b>
+<b class="fc">&nbsp;        newSlide.setCaseId(caseId);</b>
+<b class="fc">&nbsp;        newSlide.getDetails().setOrganType(organ);</b>
+&nbsp;
+<b class="pc">&nbsp;        if (stain.isPresent()) {</b>
+<b class="nc">&nbsp;            logger.info(&quot;buildSlide :: Stain is present.&quot;);</b>
+<b class="nc">&nbsp;            StainNames stainEnum = StainNames.fromStain(stain.get());</b>
+<b class="nc">&nbsp;            newSlide.getDetails().setStain(stainEnum.getStain());</b>
+&nbsp;
+<b class="nc">&nbsp;            if (&quot;Other&quot;.equalsIgnoreCase(stainEnum.getStain())) {</b>
+<b class="nc">&nbsp;                newSlide.getDetails().setStainName(stain.get());</b>
+&nbsp;            }
+&nbsp;        } else {
+<b class="fc">&nbsp;            logger.info(&quot;buildSlide :: No stain present for case id: {} and slide id: {}&quot;, caseId, barcodeValue);</b>
+&nbsp;        }
+&nbsp;
+<b class="pc">&nbsp;        if (networkEnabled) {</b>
+<b class="fc">&nbsp;            newSlide.setSource( getSignedUrl( sourceUrl ) );</b>
+&nbsp;        }else{
+<b class="nc">&nbsp;            newSlide.setSource( getApiSignedUrl( sourceUrl ) );</b>
+&nbsp;        }
+&nbsp;        // Optional fields
+<b class="fc">&nbsp;        newSlide.setScannedDate(LocalDate.now().toString());</b>
+<b class="fc">&nbsp;        newSlide.setFileExt(&quot;zip&quot;);</b>
+<b class="fc">&nbsp;        logger.info( &quot;buildSlide :: newSlide :: {}&quot;, newSlide );</b>
+<b class="fc">&nbsp;        return newSlide;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private String getSignedUrl(String sourceUrl) {
+&nbsp;        try {
+<b class="fc">&nbsp;            return signedUrlCreationService.generateSignedUrl(sourceUrl);</b>
+&nbsp;        } catch (IOException ex) {
+<b class="nc">&nbsp;            throw new SignedUrlGenerationException(&quot;Failed to create signed URL: &quot;, ex);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private String getApiSignedUrl(String sourceUrl)  {
+&nbsp;        try {
+<b class="nc">&nbsp;            logger.info(&quot;getApiSignedUrl :: Generating signed URL for source URL: {}&quot;, sourceUrl);</b>
+<b class="nc">&nbsp;            URI uri = new URI( sourceUrl );</b>
+<b class="nc">&nbsp;            Pattern urlPattern = Pattern.compile( &quot;/b/([^/]+)/o/([^?]+)&quot; );</b>
+<b class="nc">&nbsp;            Matcher urlMatcher = urlPattern.matcher( uri.getPath( ) );</b>
+&nbsp;
+<b class="nc">&nbsp;            if ( !urlMatcher.find( ) ) {</b>
+<b class="nc">&nbsp;                throw new IllegalArgumentException( &quot;Invalid GCS media URL format&quot; );</b>
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            String bucketName = urlMatcher.group( 1 );</b>
+<b class="nc">&nbsp;            String objectNameEncoded = urlMatcher.group( 2 );</b>
+<b class="nc">&nbsp;            String objectName = URLDecoder.decode( objectNameEncoded, StandardCharsets.UTF_8 );</b>
+<b class="nc">&nbsp;            logger.info( &quot;getApiSignedUrl :: bucketName :: {}&quot;, bucketName );</b>
+<b class="nc">&nbsp;            logger.info( &quot;getApiSignedUrl :: objectName :: {}&quot;, objectName );</b>
+&nbsp;
+&nbsp;            // Optional generation param
+<b class="nc">&nbsp;            String query = uri.getQuery( );</b>
+<b class="nc">&nbsp;            Long generation = null;</b>
+<b class="nc">&nbsp;            if ( query != null ) {</b>
+<b class="nc">&nbsp;                for ( String param : query.split( &quot;&amp;&quot; ) ) {</b>
+<b class="nc">&nbsp;                    String[] kv = param.split( &quot;=&quot;, 2 );</b>
+<b class="nc">&nbsp;                    if ( kv.length == 2 &amp;&amp; kv[ 0 ].equals( &quot;generation&quot; ) ) {</b>
+<b class="nc">&nbsp;                        generation = Long.parseLong( kv[ 1 ] );</b>
+&nbsp;                        break;
+&nbsp;                    }
+&nbsp;                }
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            return apiSignedUrlService.generateApiSignedUrl( bucketName, objectName, generation );</b>
+&nbsp;        }catch ( Exception e ){
+<b class="nc">&nbsp;            throw new SignedUrlGenerationException( &quot;Failed to create signed URL: &quot;, e );</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    public String resolveOrgan(String rawValue) {
+<b class="fc">&nbsp;        String valueFromYaml = organMappingConfig.getMapping().getOrDefault(rawValue.trim().toLowerCase(), rawValue);</b>
+<b class="fc">&nbsp;        logger.info(&quot;resolveOrgan :: Fetched organ value from YAML is: {}&quot;, valueFromYaml);</b>
+<b class="fc">&nbsp;        return valueFromYaml;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-02-26 18:07</div>
+</div>
+</body>
+</html>

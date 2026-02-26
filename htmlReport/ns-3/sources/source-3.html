@@ -1,0 +1,159 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > GcsConfig</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.eh.digitalpathology.ibex.config</a>
+</div>
+
+<h1>Coverage Summary for Class: GcsConfig (com.eh.digitalpathology.ibex.config)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">GcsConfig</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/10)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.eh.digitalpathology.ibex.config;
+&nbsp;
+&nbsp;import com.eh.digitalpathology.ibex.util.CryptoUtils;
+&nbsp;import com.google.auth.oauth2.ServiceAccountCredentials;
+&nbsp;import com.google.cloud.storage.Storage;
+&nbsp;import com.google.cloud.storage.StorageOptions;
+&nbsp;import org.springframework.beans.factory.annotation.Value;
+&nbsp;import org.springframework.cloud.context.config.annotation.RefreshScope;
+&nbsp;import org.springframework.context.annotation.Bean;
+&nbsp;import org.springframework.context.annotation.Configuration;
+&nbsp;import org.springframework.context.annotation.Lazy;
+&nbsp;
+&nbsp;import javax.crypto.spec.SecretKeySpec;
+&nbsp;import java.nio.charset.StandardCharsets;
+&nbsp;import java.security.KeyFactory;
+&nbsp;import java.security.PrivateKey;
+&nbsp;import java.security.spec.PKCS8EncodedKeySpec;
+&nbsp;import java.util.Base64;
+&nbsp;
+&nbsp;@Configuration
+&nbsp;@RefreshScope
+<b class="nc">&nbsp;public class GcsConfig {</b>
+&nbsp;
+&nbsp;    @Value( &quot;${project.name}&quot; )
+&nbsp;    private String projectId;
+&nbsp;
+&nbsp;    @Value( &quot;${service.account.name}&quot; )
+&nbsp;    private String clientEmail;
+&nbsp;
+&nbsp;    @Value( &quot;${project.secret}&quot; )
+&nbsp;    private String secretKey;
+&nbsp;
+&nbsp;    @Value( &quot;${signed.url.key}&quot; )
+&nbsp;    private String encryptedKey;
+&nbsp;
+&nbsp;    @Lazy
+&nbsp;    @Bean
+&nbsp;    public Storage storage ( ) throws Exception {
+&nbsp;        // Derive AES key from your secret
+<b class="nc">&nbsp;        String secretKeyBytes = CryptoUtils.encodeSecretKey( secretKey );</b>
+<b class="nc">&nbsp;        SecretKeySpec secretKeySpec = new SecretKeySpec( secretKeyBytes.getBytes( StandardCharsets.UTF_8 ), &quot;AES&quot; );</b>
+&nbsp;
+&nbsp;        // Decrypt PKCS#8 private key (base64)
+<b class="nc">&nbsp;        String privateKeyPkcs8 = CryptoUtils.decrypt( encryptedKey, secretKeySpec );</b>
+&nbsp;
+<b class="nc">&nbsp;        byte[] decodedKey = Base64.getDecoder( ).decode( privateKeyPkcs8 );</b>
+<b class="nc">&nbsp;        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec( decodedKey );</b>
+<b class="nc">&nbsp;        KeyFactory keyFactory = KeyFactory.getInstance( &quot;RSA&quot; );</b>
+<b class="nc">&nbsp;        PrivateKey privateKey = keyFactory.generatePrivate( keySpec );</b>
+&nbsp;
+<b class="nc">&nbsp;        ServiceAccountCredentials credentials = ServiceAccountCredentials.newBuilder( ).setClientEmail( clientEmail ).setPrivateKey( privateKey ).build( );</b>
+&nbsp;
+<b class="nc">&nbsp;        return StorageOptions.newBuilder( ).setProjectId( projectId ).setCredentials( credentials ).build( ).getService( );</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-02-26 18:07</div>
+</div>
+</body>
+</html>

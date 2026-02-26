@@ -1,0 +1,317 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > FileDownloadController</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.eh.digitalpathology.ibex.controller</a>
+</div>
+
+<h1>Coverage Summary for Class: FileDownloadController (com.eh.digitalpathology.ibex.controller)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">FileDownloadController</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (11/11)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    65%
+  </span>
+  <span class="absValue">
+    (13/20)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    93.2%
+  </span>
+  <span class="absValue">
+    (69/74)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.eh.digitalpathology.ibex.controller;
+&nbsp;
+&nbsp;
+&nbsp;import com.eh.digitalpathology.ibex.model.SlideScanProgressEvent;
+&nbsp;import com.eh.digitalpathology.ibex.service.BarcodeStudyInfo;
+&nbsp;import com.eh.digitalpathology.ibex.service.KafkaNotificationProducer;
+&nbsp;import com.eh.digitalpathology.ibex.util.SignatureUtils;
+&nbsp;import com.google.cloud.ReadChannel;
+&nbsp;import com.google.cloud.storage.Blob;
+&nbsp;import com.google.cloud.storage.BlobId;
+&nbsp;import com.google.cloud.storage.Storage;
+&nbsp;import jakarta.servlet.ServletOutputStream;
+&nbsp;import jakarta.servlet.http.HttpServletResponse;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.springframework.http.HttpStatus;
+&nbsp;import org.springframework.util.StringUtils;
+&nbsp;import org.springframework.web.bind.annotation.GetMapping;
+&nbsp;import org.springframework.web.bind.annotation.RequestMapping;
+&nbsp;import org.springframework.web.bind.annotation.RequestParam;
+&nbsp;import org.springframework.web.bind.annotation.RestController;
+&nbsp;
+&nbsp;import java.io.BufferedOutputStream;
+&nbsp;import java.io.IOException;
+&nbsp;import java.nio.ByteBuffer;
+&nbsp;import java.nio.charset.StandardCharsets;
+&nbsp;
+&nbsp;@RestController
+&nbsp;@RequestMapping( &quot;/api/files&quot; )
+&nbsp;public class FileDownloadController {
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger logger = LoggerFactory.getLogger( FileDownloadController.class );</b>
+&nbsp;
+&nbsp;    private final Storage storage;
+&nbsp;    private final SignatureUtils signatureUtils;
+&nbsp;    private final KafkaNotificationProducer kafkaNotificationProducer;
+&nbsp;    private final BarcodeStudyInfo barcodeStudyInfo;
+&nbsp;
+<b class="fc">&nbsp;    public FileDownloadController (Storage storage, SignatureUtils signatureUtils, KafkaNotificationProducer kafkaNotificationProducer, BarcodeStudyInfo barcodeStudyInfo) {</b>
+<b class="fc">&nbsp;        this.storage = storage;</b>
+<b class="fc">&nbsp;        this.signatureUtils = signatureUtils;</b>
+<b class="fc">&nbsp;        this.kafkaNotificationProducer = kafkaNotificationProducer;</b>
+<b class="fc">&nbsp;        this.barcodeStudyInfo = barcodeStudyInfo;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @GetMapping(&quot;/download&quot;)
+&nbsp;    public void download(
+&nbsp;            @RequestParam String bucket,
+&nbsp;            @RequestParam String object,
+&nbsp;            @RequestParam(required = false) Long generation,
+&nbsp;            @RequestParam long expires,
+&nbsp;            @RequestParam String sig,
+&nbsp;            HttpServletResponse response
+&nbsp;    ) throws Exception {
+<b class="fc">&nbsp;        final String path = &quot;/api/files/download&quot;;</b>
+<b class="fc">&nbsp;        final long t0 = System.currentTimeMillis();</b>
+<b class="fc">&nbsp;        logger.info(&quot;download :: start :: bucket={} object={} generation={} expires={} sig.len={}&quot;,</b>
+<b class="pc">&nbsp;                bucket, object, generation, expires, (sig == null ? 0 : sig.length()));</b>
+&nbsp;
+<b class="fc">&nbsp;        String fileName = null;</b>
+&nbsp;
+&nbsp;        try {
+&nbsp;            // 1) Validate signed URL (early returns to avoid nesting)
+<b class="fc">&nbsp;            final String canonical = signatureUtils.canonical(&quot;GET&quot;, path, bucket, object, generation, expires);</b>
+<b class="fc">&nbsp;            logger.info(&quot;download :: canonical :: {}&quot;, canonical);</b>
+&nbsp;
+<b class="fc">&nbsp;            if (signatureUtils.isExpired(expires)) {</b>
+<b class="fc">&nbsp;                logger.warn(&quot;download :: link expired :: now={} expires={}&quot;, System.currentTimeMillis() / 1000, expires);</b>
+<b class="fc">&nbsp;                respondWithText(response, HttpStatus.GONE, &quot;Link expired&quot;);</b>
+&nbsp;                return;
+&nbsp;            }
+&nbsp;
+<b class="fc">&nbsp;            if (!signatureUtils.verify(sig, canonical)) {</b>
+<b class="fc">&nbsp;                logger.info(&quot;download :: signature.verify :: false&quot;);</b>
+<b class="fc">&nbsp;                respondWithText(response, HttpStatus.FORBIDDEN, &quot;Invalid signature&quot;);</b>
+&nbsp;                return;
+&nbsp;            }
+<b class="fc">&nbsp;            logger.info(&quot;download :: signature.verify :: true&quot;);</b>
+&nbsp;
+&nbsp;            // 2) Fetch blob (early return if not found)
+<b class="fc">&nbsp;            final Blob blob = getBlob(bucket, object, generation);</b>
+<b class="fc">&nbsp;            if (blob == null) {</b>
+<b class="fc">&nbsp;                logger.warn(&quot;download :: blob not found :: bucket={} object={} generation={}&quot;, bucket, object, generation);</b>
+<b class="fc">&nbsp;                respondWithText(response, HttpStatus.NOT_FOUND, &quot;Object not found&quot;);</b>
+&nbsp;                return;
+&nbsp;            }
+&nbsp;
+&nbsp;            // 3) Prepare headers
+<b class="fc">&nbsp;            fileName = extractFileName(blob.getName());</b>
+<b class="fc">&nbsp;            prepareDownloadHeaders(response, blob, fileName);</b>
+&nbsp;
+&nbsp;            // 4) Stream
+<b class="fc">&nbsp;            streamBlobToResponse(blob, response, t0, fileName);</b>
+&nbsp;
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            handleError(response, e, fileName);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /* ====================== helpers (reduced branching &amp; isolated concerns) ====================== */
+&nbsp;
+&nbsp;    private Blob getBlob(String bucket, String object, Long generation) {
+<b class="fc">&nbsp;        final long t1 = System.currentTimeMillis();</b>
+<b class="pc">&nbsp;        final BlobId blobId = (generation != null) ? BlobId.of(bucket, object, generation) : BlobId.of(bucket, object);</b>
+<b class="fc">&nbsp;        final Blob blob = storage.get(blobId);</b>
+<b class="fc">&nbsp;        final long t2 = System.currentTimeMillis();</b>
+<b class="fc">&nbsp;        logger.info(&quot;download :: storage.get :: {} ms&quot;, (t2 - t1));</b>
+<b class="fc">&nbsp;        return blob;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private String extractFileName(String blobName) {
+<b class="fc">&nbsp;        final int idx = blobName.lastIndexOf(&#39;/&#39;);</b>
+<b class="pc">&nbsp;        return (idx &gt;= 0) ? blobName.substring(idx + 1) : blobName;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private void prepareDownloadHeaders(HttpServletResponse response, Blob blob, String fileName) {
+<b class="fc">&nbsp;        response.setContentType(&quot;application/zip&quot;);</b>
+<b class="fc">&nbsp;        response.setHeader(&quot;Content-Disposition&quot;, &quot;attachment; filename=\&quot;&quot; + fileName + &quot;\&quot;&quot;);</b>
+<b class="fc">&nbsp;        response.setHeader(&quot;Content-Length&quot;, String.valueOf(blob.getSize()));</b>
+<b class="pc">&nbsp;        if (blob.getEtag() != null) {</b>
+<b class="fc">&nbsp;            response.setHeader(&quot;ETag&quot;, blob.getEtag());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        response.setBufferSize(APP_BUFFER_SIZE);</b>
+<b class="fc">&nbsp;        response.setContentLengthLong(blob.getSize());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private void streamBlobToResponse(Blob blob, HttpServletResponse response, long t0, String fileName) throws IOException {
+&nbsp;        // Using 8MB read chunks from GCS and 16MB write buffer to client (adjust constants if desired)
+<b class="fc">&nbsp;        try (ReadChannel reader = blob.reader();</b>
+<b class="fc">&nbsp;             BufferedOutputStream os = new BufferedOutputStream(response.getOutputStream(), APP_BUFFER_SIZE)) {</b>
+&nbsp;
+<b class="fc">&nbsp;            reader.setChunkSize(GCS_RPC_CHUNK_SIZE);</b>
+&nbsp;
+<b class="fc">&nbsp;            byte[] buf = new byte[APP_BUFFER_SIZE];</b>
+<b class="fc">&nbsp;            long total = 0L;</b>
+&nbsp;
+<b class="fc">&nbsp;            ByteBuffer buffer = ByteBuffer.allocate(APP_BUFFER_SIZE);</b>
+&nbsp;            int read;
+<b class="fc">&nbsp;            while ((read = reader.read(buffer)) &gt;= 0) {</b>
+<b class="fc">&nbsp;                buffer.flip();</b>
+<b class="fc">&nbsp;                buffer.get(buf, 0, read);</b>
+<b class="fc">&nbsp;                os.write(buf, 0, read);</b>
+<b class="fc">&nbsp;                total += read;</b>
+<b class="fc">&nbsp;                buffer.clear();</b>
+&nbsp;            }
+<b class="fc">&nbsp;            os.flush();</b>
+<b class="fc">&nbsp;            logger.info(&quot;download :: streamed :: {} bytes in {} ms for file {}&quot;, total, (System.currentTimeMillis() - t0), fileName);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void respondWithText(HttpServletResponse response, HttpStatus status, String message) {
+<b class="fc">&nbsp;        response.setStatus(status.value());</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            writeText(response, message);</b>
+&nbsp;        } catch (Exception ignore) {
+&nbsp;            // Ignore
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void handleError(HttpServletResponse response, Exception e, String fileName) {
+<b class="fc">&nbsp;        logger.error(&quot;download :: error :: {}&quot;, e.getMessage(), e);</b>
+&nbsp;        // Best-effort progress event notification
+<b class="fc">&nbsp;        tryNotifyDownloadFailure(fileName);</b>
+<b class="fc">&nbsp;        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            writeText(response, &quot;Server error: &quot; + e.getMessage());</b>
+&nbsp;        } catch (Exception ignore) {
+&nbsp;            // Ignore
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void tryNotifyDownloadFailure(String fileName) {
+<b class="pc">&nbsp;        if (!StringUtils.hasText(fileName)) {</b>
+&nbsp;            return;
+&nbsp;        }
+<b class="nc">&nbsp;        String studyId = fileName.replace(&quot;.zip&quot;, &quot;&quot;);</b>
+<b class="nc">&nbsp;        String barcode = barcodeStudyInfo.getBarcode(studyId);</b>
+<b class="nc">&nbsp;        if (StringUtils.hasText(barcode)) {</b>
+<b class="nc">&nbsp;            kafkaNotificationProducer.notifyScanProgress(new SlideScanProgressEvent(barcode, &quot;ibex-files-download-failed&quot;));</b>
+&nbsp;        } else {
+<b class="nc">&nbsp;            logger.error(&quot;Cannot publish scan progress failure event: barcode not found for studyId=&#39;{}&#39; derived from file=&#39;{}&#39;&quot;, studyId, fileName);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /* ====================== tuning constants ====================== */
+&nbsp;
+&nbsp;    // Note: The comments in your original suggested different sizes.
+&nbsp;// Make them accurate &amp; configurable (e.g., via @Value or application.yml).
+&nbsp;    private static final int APP_BUFFER_SIZE = 16 * 1024 * 1024;   // 16MB write buffer to client
+&nbsp;    private static final int GCS_RPC_CHUNK_SIZE = 8 * 1024 * 1024; // 8MB per GCS RPC (must be &gt;= 256KB)
+&nbsp;    private void writeText ( HttpServletResponse response, String msg ) throws IOException {
+<b class="fc">&nbsp;        response.setContentType( &quot;text/plain; charset=UTF-8&quot; );</b>
+<b class="fc">&nbsp;        try ( ServletOutputStream os = response.getOutputStream( ) ) {</b>
+<b class="fc">&nbsp;            os.write( msg.getBytes( StandardCharsets.UTF_8 ) );</b>
+<b class="fc">&nbsp;            os.flush( );</b>
+&nbsp;        }
+<b class="fc">&nbsp;        response.flushBuffer( );</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+&nbsp;
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-02-26 18:07</div>
+</div>
+</body>
+</html>

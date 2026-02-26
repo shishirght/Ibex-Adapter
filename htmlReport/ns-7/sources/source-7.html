@@ -1,0 +1,176 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > SlideDetails</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.eh.digitalpathology.ibex.model</a>
+</div>
+
+<h1>Coverage Summary for Class: SlideDetails (com.eh.digitalpathology.ibex.model)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">SlideDetails</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (11/11)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (12/12)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;/**
+&nbsp; * SlideDetails is used to hold the details of slide.
+&nbsp; * Author: Preeti Ankam
+&nbsp; * Date: October 10, 2024
+&nbsp; */
+&nbsp;
+&nbsp;package com.eh.digitalpathology.ibex.model;
+&nbsp;
+&nbsp;import com.fasterxml.jackson.annotation.JsonInclude;
+&nbsp;import com.fasterxml.jackson.annotation.JsonProperty;
+&nbsp;import jakarta.validation.constraints.Size;
+&nbsp;
+<b class="fc">&nbsp;public class SlideDetails {</b>
+&nbsp;    @JsonProperty(&quot;organ_type&quot;)
+&nbsp;    private String organType;
+&nbsp;
+&nbsp;    private String stain;
+&nbsp;
+&nbsp;    @JsonProperty(&quot;stain_name&quot;)
+&nbsp;    @Size(max = 255)
+&nbsp;    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+&nbsp;    private String stainName;
+&nbsp;
+&nbsp;    //optional
+&nbsp;    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+&nbsp;    private String procedure;
+&nbsp;
+&nbsp;    @JsonProperty(&quot;sub_tissue&quot;)
+&nbsp;    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+&nbsp;    private String subTissue;
+&nbsp;
+&nbsp;    public String getOrganType() {
+<b class="fc">&nbsp;        return organType;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void setOrganType(String organType) {
+<b class="fc">&nbsp;        this.organType = organType;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public String getStain() {
+<b class="fc">&nbsp;        return stain;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public SlideDetails setStain(String stain) {
+<b class="fc">&nbsp;        this.stain = stain;</b>
+<b class="fc">&nbsp;        return this;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public String getStainName() {
+<b class="fc">&nbsp;        return stainName;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void setStainName(String stainName) {
+<b class="fc">&nbsp;        this.stainName = stainName;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public String getProcedure() {
+<b class="fc">&nbsp;        return procedure;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void setProcedure(String procedure) {
+<b class="fc">&nbsp;        this.procedure = procedure;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public String getSubTissue() {
+<b class="fc">&nbsp;        return subTissue;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void setSubTissue(String subTissue) {
+<b class="fc">&nbsp;        this.subTissue = subTissue;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-02-26 18:07</div>
+</div>
+</body>
+</html>
