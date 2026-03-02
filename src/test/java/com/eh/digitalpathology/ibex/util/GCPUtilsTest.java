@@ -2,12 +2,18 @@ package com.eh.digitalpathology.ibex.util;
 
 import com.eh.digitalpathology.ibex.config.GcpConfig;
 import com.eh.digitalpathology.ibex.exceptions.HealthcareApiException;
+import com.google.auth.oauth2.AccessToken;
+import com.google.auth.oauth2.GoogleCredentials;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.InputStream;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -16,76 +22,77 @@ class GCPUtilsTest {
     @Mock
     private GcpConfig gcpConfig;
 
-    // ==========================
-    // getAccessToken() Tests
-    // ==========================
-
     @Test
-    void testGetAccessToken_ReturnsEmpty_WhenCredsNull() throws HealthcareApiException {
+    void getAccessToken_whenCredsNull_returnsEmpty() throws HealthcareApiException {
         when(gcpConfig.getCreds()).thenReturn(null);
-
-        String result = GCPUtils.getAccessToken(gcpConfig);
-
-        assertEquals("", result);
-        verify(gcpConfig, times(1)).getCreds();
+        assertEquals("", GCPUtils.getAccessToken(gcpConfig));
     }
 
     @Test
-    void testGetAccessToken_ReturnsEmpty_WhenCredsBlank() throws HealthcareApiException {
+    void getAccessToken_whenCredsBlank_returnsEmpty() throws HealthcareApiException {
         when(gcpConfig.getCreds()).thenReturn("   ");
-
-        String result = GCPUtils.getAccessToken(gcpConfig);
-
-        assertEquals("", result);
-        verify(gcpConfig, times(1)).getCreds();
+        assertEquals("", GCPUtils.getAccessToken(gcpConfig));
     }
 
     @Test
-    void testGetAccessToken_ReturnsEmpty_WhenCredsEmptyString() throws HealthcareApiException {
+    void getAccessToken_whenCredsEmpty_returnsEmpty() throws HealthcareApiException {
         when(gcpConfig.getCreds()).thenReturn("");
-
-        String result = GCPUtils.getAccessToken(gcpConfig);
-
-        assertEquals("", result);
-        verify(gcpConfig, times(1)).getCreds();
+        assertEquals("", GCPUtils.getAccessToken(gcpConfig));
     }
 
     @Test
-    void testGetAccessToken_ThrowsHealthcareApiException_WhenCredsInvalid() {
-        when(gcpConfig.getCreds()).thenReturn("not-valid-json-credentials");
+    void getAccessToken_whenValidCreds_refreshesAndReturnsToken() throws Exception {
+        when(gcpConfig.getCreds()).thenReturn("{\"type\":\"service_account\"}");
 
-        HealthcareApiException exception = assertThrows(HealthcareApiException.class,
-                () -> GCPUtils.getAccessToken(gcpConfig));
+        GoogleCredentials mockScoped = mock(GoogleCredentials.class);
+        GoogleCredentials mockBase = mock(GoogleCredentials.class);
+        AccessToken mockToken = mock(AccessToken.class);
 
-        assertNotNull(exception.getMessage());
-        assertTrue(exception.getMessage().contains("Failed to get access token from service account credentials"));
+        when(mockBase.createScoped(any(java.util.Collection.class))).thenReturn(mockScoped);
+        when(mockScoped.refreshAccessToken()).thenReturn(mockToken);
+        when(mockToken.getTokenValue()).thenReturn("test-token-value");
+
+        try (MockedStatic<GoogleCredentials> gcMock = mockStatic(GoogleCredentials.class)) {
+            gcMock.when(() -> GoogleCredentials.fromStream(any(InputStream.class))).thenReturn(mockBase);
+
+            String result = GCPUtils.getAccessToken(gcpConfig);
+
+            assertEquals("test-token-value", result);
+            verify(mockScoped).refreshIfExpired();
+            verify(mockScoped).refreshAccessToken();
+        }
     }
 
     @Test
-    void testGetAccessToken_ThrowsHealthcareApiException_WhenCredsMalformedJson() {
-        when(gcpConfig.getCreds()).thenReturn("{malformed-json}");
-
-        assertThrows(HealthcareApiException.class,
-                () -> GCPUtils.getAccessToken(gcpConfig));
-    }
-
-    @Test
-    void testGetAccessToken_ThrowsHealthcareApiException_WhenCredsValidJsonButInvalidServiceAccount() {
-        // Valid JSON but not a valid service account key structure
-        String invalidServiceAccountJson = "{\"type\":\"service_account\",\"project_id\":\"test\"}";
-        when(gcpConfig.getCreds()).thenReturn(invalidServiceAccountJson);
-
-        assertThrows(HealthcareApiException.class,
-                () -> GCPUtils.getAccessToken(gcpConfig));
-    }
-
-    @Test
-    void testGetAccessToken_WrapsOriginalCause_WhenExceptionThrown() {
+    void getAccessToken_whenGoogleCredentialsThrows_throwsHealthcareApiException() {
         when(gcpConfig.getCreds()).thenReturn("invalid-creds");
 
-        HealthcareApiException exception = assertThrows(HealthcareApiException.class,
-                () -> GCPUtils.getAccessToken(gcpConfig));
+        try (MockedStatic<GoogleCredentials> gcMock = mockStatic(GoogleCredentials.class)) {
+            gcMock.when(() -> GoogleCredentials.fromStream(any(InputStream.class)))
+                    .thenThrow(new RuntimeException("credentials parse failure"));
 
-        assertNotNull(exception.getCause());
+            HealthcareApiException ex = assertThrows(HealthcareApiException.class,
+                    () -> GCPUtils.getAccessToken(gcpConfig));
+            assertTrue(ex.getMessage().contains("Failed to get access token from service account credentials"));
+            assertNotNull(ex.getCause());
+        }
+    }
+
+    @Test
+    void getAccessToken_whenRefreshThrows_throwsHealthcareApiException() throws Exception {
+        when(gcpConfig.getCreds()).thenReturn("{\"type\":\"service_account\"}");
+
+        GoogleCredentials mockScoped = mock(GoogleCredentials.class);
+        GoogleCredentials mockBase = mock(GoogleCredentials.class);
+        when(mockBase.createScoped(any(java.util.Collection.class))).thenReturn(mockScoped);
+        doThrow(new RuntimeException("refresh failed")).when(mockScoped).refreshIfExpired();
+
+        try (MockedStatic<GoogleCredentials> gcMock = mockStatic(GoogleCredentials.class)) {
+            gcMock.when(() -> GoogleCredentials.fromStream(any(InputStream.class))).thenReturn(mockBase);
+
+            HealthcareApiException ex = assertThrows(HealthcareApiException.class,
+                    () -> GCPUtils.getAccessToken(gcpConfig));
+            assertTrue(ex.getMessage().contains("Failed to get access token from service account credentials"));
+        }
     }
 }

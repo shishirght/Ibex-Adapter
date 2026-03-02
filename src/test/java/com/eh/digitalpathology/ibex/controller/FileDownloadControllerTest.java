@@ -1,5 +1,7 @@
 package com.eh.digitalpathology.ibex.controller;
 
+import com.eh.digitalpathology.ibex.service.BarcodeStudyInfo;
+import com.eh.digitalpathology.ibex.service.KafkaNotificationProducer;
 import com.eh.digitalpathology.ibex.util.SignatureUtils;
 import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.Blob;
@@ -8,7 +10,9 @@ import com.google.cloud.storage.Storage;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.nio.ByteBuffer;
@@ -31,6 +35,12 @@ class FileDownloadControllerTest {
     @Mock
     private ReadChannel readChannel;
 
+    @Mock
+    private KafkaNotificationProducer kafkaNotificationProducer;
+
+    @Mock
+    private BarcodeStudyInfo barcodeStudyInfo;
+
     @InjectMocks
     private FileDownloadController controller;
 
@@ -42,19 +52,10 @@ class FileDownloadControllerTest {
     @Test
     void download_shouldReturn410_whenLinkExpired() throws Exception {
         MockHttpServletResponse response = new MockHttpServletResponse();
-
-        when(signatureUtils.canonical(any(), any(), any(), any(), any(), anyLong()))
-                .thenReturn("canonical");
+        when(signatureUtils.canonical(any(), any(), any(), any(), any(), anyLong())).thenReturn("canonical");
         when(signatureUtils.isExpired(anyLong())).thenReturn(true);
 
-        controller.download(
-                "bucket",
-                "file.zip",
-                null,
-                123L,
-                "sig",
-                response
-        );
+        controller.download("bucket", "file.zip", null, 123L, "sig", response);
 
         assertEquals(HttpServletResponse.SC_GONE, response.getStatus());
         assertEquals("Link expired", response.getContentAsString());
@@ -63,20 +64,11 @@ class FileDownloadControllerTest {
     @Test
     void download_shouldReturn403_whenSignatureInvalid() throws Exception {
         MockHttpServletResponse response = new MockHttpServletResponse();
-
-        when(signatureUtils.canonical(any(), any(), any(), any(), any(), anyLong()))
-                .thenReturn("canonical");
+        when(signatureUtils.canonical(any(), any(), any(), any(), any(), anyLong())).thenReturn("canonical");
         when(signatureUtils.isExpired(anyLong())).thenReturn(false);
         when(signatureUtils.verify(anyString(), anyString())).thenReturn(false);
 
-        controller.download(
-                "bucket",
-                "file.zip",
-                null,
-                123L,
-                "bad-sig",
-                response
-        );
+        controller.download("bucket", "file.zip", null, 123L, "bad-sig", response);
 
         assertEquals(HttpServletResponse.SC_FORBIDDEN, response.getStatus());
         assertEquals("Invalid signature", response.getContentAsString());
@@ -85,21 +77,12 @@ class FileDownloadControllerTest {
     @Test
     void download_shouldReturn404_whenBlobNotFound() throws Exception {
         MockHttpServletResponse response = new MockHttpServletResponse();
-
-        when(signatureUtils.canonical(any(), any(), any(), any(), any(), anyLong()))
-                .thenReturn("canonical");
+        when(signatureUtils.canonical(any(), any(), any(), any(), any(), anyLong())).thenReturn("canonical");
         when(signatureUtils.isExpired(anyLong())).thenReturn(false);
         when(signatureUtils.verify(anyString(), anyString())).thenReturn(true);
         when(storage.get(any(BlobId.class))).thenReturn(null);
 
-        controller.download(
-                "bucket",
-                "file.zip",
-                null,
-                123L,
-                "sig",
-                response
-        );
+        controller.download("bucket", "file.zip", null, 123L, "sig", response);
 
         assertEquals(HttpServletResponse.SC_NOT_FOUND, response.getStatus());
         assertEquals("Object not found", response.getContentAsString());
@@ -108,19 +91,14 @@ class FileDownloadControllerTest {
     @Test
     void download_shouldStreamFileSuccessfully() throws Exception {
         MockHttpServletResponse response = new MockHttpServletResponse();
-
-        when(signatureUtils.canonical(any(), any(), any(), any(), any(), anyLong()))
-                .thenReturn("canonical");
+        when(signatureUtils.canonical(any(), any(), any(), any(), any(), anyLong())).thenReturn("canonical");
         when(signatureUtils.isExpired(anyLong())).thenReturn(false);
         when(signatureUtils.verify(anyString(), anyString())).thenReturn(true);
-
         when(storage.get(any(BlobId.class))).thenReturn(blob);
         when(blob.getName()).thenReturn("folder/file.zip");
         when(blob.getSize()).thenReturn(5L);
         when(blob.getEtag()).thenReturn("etag");
         when(blob.reader()).thenReturn(readChannel);
-
-        // Simulate one read then EOF
         when(readChannel.read(any(ByteBuffer.class)))
                 .thenAnswer(invocation -> {
                     ByteBuffer buffer = invocation.getArgument(0);
@@ -129,14 +107,7 @@ class FileDownloadControllerTest {
                 })
                 .thenReturn(-1);
 
-        controller.download(
-                "bucket",
-                "file.zip",
-                null,
-                123L,
-                "sig",
-                response
-        );
+        controller.download("bucket", "file.zip", null, 123L, "sig", response);
 
         assertEquals(HttpServletResponse.SC_OK, response.getStatus());
         assertEquals("application/zip", response.getContentType());
@@ -146,20 +117,96 @@ class FileDownloadControllerTest {
     @Test
     void download_shouldReturn500_onUnexpectedException() throws Exception {
         MockHttpServletResponse response = new MockHttpServletResponse();
-
         when(signatureUtils.canonical(any(), any(), any(), any(), any(), anyLong()))
                 .thenThrow(new RuntimeException("boom"));
 
-        controller.download(
-                "bucket",
-                "file.zip",
-                null,
-                123L,
-                "sig",
-                response
-        );
+        controller.download("bucket", "file.zip", null, 123L, "sig", response);
 
         assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
         assertTrue(response.getContentAsString().contains("Server error"));
+    }
+
+    @Test
+    void download_shouldReturn500_andSkipNotify_whenFileNameIsNull() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        when(signatureUtils.canonical(any(), any(), any(), any(), any(), anyLong()))
+                .thenThrow(new RuntimeException("boom"));
+
+        controller.download("bucket", "file.zip", null, 123L, "sig", response);
+
+        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
+        verifyNoInteractions(barcodeStudyInfo);
+        verifyNoInteractions(kafkaNotificationProducer);
+    }
+
+    @Test
+    void download_shouldReturn500_andNotifyWithBarcode_whenBlobThrowsAfterNameSet() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        when(signatureUtils.canonical(any(), any(), any(), any(), any(), anyLong())).thenReturn("canonical");
+        when(signatureUtils.isExpired(anyLong())).thenReturn(false);
+        when(signatureUtils.verify(anyString(), anyString())).thenReturn(true);
+        when(storage.get(any(BlobId.class))).thenReturn(blob);
+        when(blob.getName()).thenReturn("study123.zip");
+        when(blob.getSize()).thenReturn(10L);
+        when(blob.getEtag()).thenReturn(null);
+        when(blob.reader()).thenThrow(new RuntimeException("reader error"));
+        when(barcodeStudyInfo.getBarcode("study123")).thenReturn("BC001");
+
+        controller.download("bucket", "study123.zip", null, 123L, "sig", response);
+
+        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
+        verify(kafkaNotificationProducer).notifyScanProgress(any());
+    }
+
+    @Test
+    void download_shouldReturn500_andLogError_whenBarcodeNotFound() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        when(signatureUtils.canonical(any(), any(), any(), any(), any(), anyLong())).thenReturn("canonical");
+        when(signatureUtils.isExpired(anyLong())).thenReturn(false);
+        when(signatureUtils.verify(anyString(), anyString())).thenReturn(true);
+        when(storage.get(any(BlobId.class))).thenReturn(blob);
+        when(blob.getName()).thenReturn("study999.zip");
+        when(blob.getSize()).thenReturn(10L);
+        when(blob.getEtag()).thenReturn(null);
+        when(blob.reader()).thenThrow(new RuntimeException("reader error"));
+        when(barcodeStudyInfo.getBarcode("study999")).thenReturn(null);
+
+        controller.download("bucket", "study999.zip", null, 123L, "sig", response);
+
+        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
+        verify(barcodeStudyInfo).getBarcode("study999");
+        verifyNoInteractions(kafkaNotificationProducer);
+    }
+
+    @Test
+    void download_withGeneration_usesBlobIdWithGeneration() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        when(signatureUtils.canonical(any(), any(), any(), any(), any(), anyLong())).thenReturn("canonical");
+        when(signatureUtils.isExpired(anyLong())).thenReturn(false);
+        when(signatureUtils.verify(anyString(), anyString())).thenReturn(true);
+        when(storage.get(any(BlobId.class))).thenReturn(null);
+
+        controller.download("bucket", "file.zip", 42L, 123L, "sig", response);
+
+        assertEquals(HttpServletResponse.SC_NOT_FOUND, response.getStatus());
+    }
+
+    @Test
+    void download_blobNameWithoutSlash_usesFullNameAsFileName() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        when(signatureUtils.canonical(any(), any(), any(), any(), any(), anyLong())).thenReturn("canonical");
+        when(signatureUtils.isExpired(anyLong())).thenReturn(false);
+        when(signatureUtils.verify(anyString(), anyString())).thenReturn(true);
+        when(storage.get(any(BlobId.class))).thenReturn(blob);
+        when(blob.getName()).thenReturn("file.zip");
+        when(blob.getSize()).thenReturn(5L);
+        when(blob.getEtag()).thenReturn(null);
+        when(blob.reader()).thenReturn(readChannel);
+        when(readChannel.read(any(ByteBuffer.class))).thenReturn(-1);
+
+        controller.download("bucket", "file.zip", null, 123L, "sig", response);
+
+        assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+        assertTrue(response.getHeader("Content-Disposition").contains("file.zip"));
     }
 }

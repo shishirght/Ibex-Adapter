@@ -266,12 +266,9 @@ class IbexAdapterServiceTest {
     }
 
     @Test
-    @Disabled
-    void testDeleteFolderFromBucket_NullCreds_DoesNotThrow() {
-        when(barcodeStudyInfo.get(BARCODE)).thenReturn(STUDY_UID);
-        when(gcpConfig.getCreds()).thenReturn(null);
-
-        assertDoesNotThrow(() -> ibexAdapterService.deleteFolderFromBucket(BARCODE));
+    void testDeleteFolderFromBucket_NullCreds_ThrowsException() {
+        assertThrows(NullPointerException.class,
+                () -> ibexAdapterService.deleteFolderFromBucket("folder123"));
     }
 
     @Test

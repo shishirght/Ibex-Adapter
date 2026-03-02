@@ -1,11 +1,4 @@
-/**
- * HealthcareApiClient class acts as a client for the DICOM Healthcare API, encapsulating
- * the logic for API calls to DICOM stores. It provides a reusable and
- * modular approach for accessing healthcare DICOM data while managing
- * errors through custom exceptions.
- * Author: Preeti Ankam
- * Date: December 23, 2024
- */
+
 
 package com.eh.digitalpathology.ibex.client;
 
@@ -14,7 +7,7 @@ import com.eh.digitalpathology.ibex.exceptions.HealthcareApiException;
 import com.eh.digitalpathology.ibex.util.GCPUtils;
 import com.eh.digitalpathology.ibex.util.HttpClientUtil;
 import com.eh.digitalpathology.ibex.model.HttpResponseWrapper;
-import org.apache.http.HttpStatus;
+import org.springframework.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -63,7 +56,7 @@ public class HealthcareApiClient {
             int statusCode = response.statusCode();
             String responseBody = response.body();
 
-            if (statusCode == HttpStatus.SC_OK) {
+            if (statusCode == HttpStatus.OK.value()) {
                 return responseBody;
             } else {
                 log.error("Failed to fetch metadata. Status: {}, Body: {}", statusCode, responseBody);
